@@ -63,12 +63,27 @@ class ConfigFile(str, Enum):
     RATE_LIMITS = "config/rate_limits.json"
 
 
+class TimeWindowSeconds(int, Enum):
+    """Named time windows used by rate limiting."""
+
+    MINUTE = 60
+    HOUR = 3600
+
+
+class ServiceName(str, Enum):
+    """External service names used by the API gatekeeper."""
+
+    DEFAULT = "default"
+
+
 __all__ = [
     "AgentRole",
     "ConfigFile",
     "LogLevel",
     "PenaltyType",
     "ScoreDimension",
+    "ServiceName",
     "SessionState",
     "Stance",
+    "TimeWindowSeconds",
 ]
