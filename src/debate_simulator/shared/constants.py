@@ -16,6 +16,13 @@ class Stance(str, Enum):
     CON = "con"
 
 
+class StanceCue(str, Enum):
+    """Text cues used by basic stance validation."""
+
+    FOR = "for"
+    AGAINST = "against"
+
+
 class PenaltyType(str, Enum):
     """Penalty categories enforced by the judge and process manager."""
 
@@ -85,5 +92,6 @@ __all__ = [
     "ServiceName",
     "SessionState",
     "Stance",
+    "StanceCue",
     "TimeWindowSeconds",
 ]
