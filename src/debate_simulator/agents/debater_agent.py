@@ -1,10 +1,14 @@
 from abc import ABC
+from pathlib import Path
 from typing import Any
 
 from debate_simulator.agents.base_agent import BaseAgent
 from debate_simulator.models.agent import AgentResponse, TurnContext
 from debate_simulator.shared.constants import AgentRole, Stance
 from debate_simulator.skills.base_skill import SkillResult
+
+_PROMPTS_DIR = Path(__file__).parent / "prompts"
+_DEBATER_PROMPT = (_PROMPTS_DIR / "debater_system.md").read_text(encoding="utf-8")
 
 
 class DebaterAgent(BaseAgent, ABC):
@@ -39,7 +43,15 @@ class DebaterAgent(BaseAgent, ABC):
         return self.llm_client.complete(f"Rebut: {opponent_argument}")
 
     def _build_prompt(self, context: TurnContext) -> str:
-        return f"{self.stance.value} on {context.topic}\nReply to: {context.opponent_last_argument}"
+        return (
+            _DEBATER_PROMPT
+            .replace("{topic}", context.topic)
+            .replace("{stance}", self.stance.value)
+            .replace(
+                "{opponent_last_argument}",
+                context.opponent_last_argument or "No previous argument",
+            )
+        )
 
     def _execute_skills(self, context: TurnContext) -> dict[str, SkillResult]:
         return {}

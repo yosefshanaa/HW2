@@ -24,22 +24,22 @@ Every task in this TODO is "done" when **all** of the following are true:
 
 | # | Task | Priority | Status | Depends On |
 |---|------|----------|--------|-----------|
-| 1.1 | Initialize project with `uv init` — create `pyproject.toml` | P0 | [ ] | — |
-| 1.2 | Create full directory structure per PLAN §1 (src/, tests/, docs/, config/, data/, results/, assets/, notebooks/, logs/) | P0 | [ ] | 1.1 |
-| 1.3 | Create all `__init__.py` files with `__all__` and `__version__` exports | P0 | [ ] | 1.2 |
-| 1.4 | Set version to **1.00** in `shared/version.py` | P0 | [ ] | 1.3 |
-| 1.5 | Create `.env.example` with `OPENAI_API_KEY=your_api_key_here` | P0 | [ ] | — |
-| 1.6 | Create `.gitignore` (exclude `.env`, `logs/`, `.rag_store/`, `__pycache__/`, `results/`, `.venv/`, `*.pyc`) | P0 | [ ] | — |
-| 1.7 | Create `config/setup.json` with all defaults (version 1.00) | P0 | [ ] | 1.2 |
-| 1.8 | Create `config/rate_limits.json` with rate limits (version 1.00) | P0 | [ ] | 1.2 |
-| 1.9 | Create `data/topics.json` with 10 debate topics across 5 categories | P0 | [ ] | — |
-| 1.10 | Implement `shared/config.py` — load JSON configs + env vars via pydantic | P0 | [ ] | 1.7, 1.8 |
-| 1.11 | Implement `shared/constants.py` — all immutable project constants as Enums | P0 | [ ] | 1.3 |
-| 1.12 | Add all project dependencies to `pyproject.toml` via `uv add` | P0 | [ ] | 1.1 |
-| 1.13 | Run `uv lock` to generate `uv.lock` | P0 | [ ] | 1.12 |
-| 1.14 | Verify `uv sync` installs everything on clean environment | P0 | [ ] | 1.13 |
-| 1.15 | Create `src/debate_simulator/__main__.py` — enable `python -m debate_simulator` execution | P0 | [ ] | 1.1 |
-| 1.16 | Design shared test fixtures in `tests/conftest.py` — mock LLM, mock search, mock RAG, sample topics, sample agents | P0 | [ ] | 1.3 |
+| 1.1 | Initialize project with `uv init` — create `pyproject.toml` | P0 | [x] | — |
+| 1.2 | Create full directory structure per PLAN §1 (src/, tests/, docs/, config/, data/, results/, assets/, notebooks/, logs/) | P0 | [x] | 1.1 |
+| 1.3 | Create all `__init__.py` files with `__all__` and `__version__` exports | P0 | [x] | 1.2 |
+| 1.4 | Set version to **1.00** in `shared/version.py` | P0 | [x] | 1.3 |
+| 1.5 | Create `.env.example` with `OPENAI_API_KEY=your_api_key_here` | P0 | [x] | — |
+| 1.6 | Create `.gitignore` (exclude `.env`, `logs/`, `.rag_store/`, `__pycache__/`, `results/`, `.venv/`, `*.pyc`) | P0 | [x] | — |
+| 1.7 | Create `config/setup.json` with all defaults (version 1.00) | P0 | [x] | 1.2 |
+| 1.8 | Create `config/rate_limits.json` with rate limits (version 1.00) | P0 | [x] | 1.2 |
+| 1.9 | Create `data/topics.json` with 10 debate topics across 5 categories | P0 | [x] | — |
+| 1.10 | Implement `shared/config.py` — load JSON configs + env vars via pydantic | P0 | [x] | 1.7, 1.8 |
+| 1.11 | Implement `shared/constants.py` — all immutable project constants as Enums | P0 | [x] | 1.3 |
+| 1.12 | Add all project dependencies to `pyproject.toml` via `uv add` | P0 | [x] | 1.1 |
+| 1.13 | Run `uv lock` to generate `uv.lock` | P0 | [x] | 1.12 |
+| 1.14 | Verify `uv sync` installs everything on clean environment | P0 | [x] | 1.13 |
+| 1.15 | Create `src/debate_simulator/__main__.py` — enable `python -m debate_simulator` execution | P0 | [x] | 1.1 |
+| 1.16 | Design shared test fixtures in `tests/conftest.py` — mock LLM, mock search, mock RAG, sample topics, sample agents | P0 | [x] | 1.3 |
 
 ---
 
@@ -47,17 +47,17 @@ Every task in this TODO is "done" when **all** of the following are true:
 
 | # | Task | Priority | Status | Depends On |
 |---|------|----------|--------|-----------|
-| 2.1 | Implement `infrastructure/logging/rotating_writer.py` — 20 files, 500 lines, thread-safe, circular overwrite | P0 | [ ] | 1.2 |
-| 2.2 | Implement `infrastructure/logging/fifo_logger.py` — named pipe creation, non-blocking writes | P0 | [ ] | 2.1 |
-| 2.3 | Implement `infrastructure/logging/log_consumer.py` — background thread, FIFO → format → RotatingWriter | P0 | [ ] | 2.1, 2.2 |
-| 2.4 | Add log format: `[ISO8601] [LEVEL] [AGENT/COMPONENT] Message` | P0 | [ ] | 2.3 |
-| 2.5 | Write per-mechanism PRD: `docs/PRD_logging_pipeline.md` | P1 | [ ] | 2.4 |
-| 2.6 | Unit test (RED): rotating writer — test 20-file rotation, 500-line limit, circular overwrite | P0 | [ ] | 2.1 |
-| 2.7 | Unit test (RED): FIFO logger — test pipe creation, non-blocking writes | P0 | [ ] | 2.2 |
-| 2.8 | Unit test (RED): log consumer — test formatting, dispatch to writer | P0 | [ ] | 2.3 |
-| 2.9 | Integration test (RED): multiple concurrent loggers → FIFO → no data loss | P1 | [ ] | 2.8 |
-| 2.10 | GREEN: implement all tests to pass | P0 | [ ] | 2.6–2.9 |
-| 2.11 | REFACTOR: clean up logging code | P1 | [ ] | 2.10 |
+| 2.1 | Implement `infrastructure/logging/rotating_writer.py` — 20 files, 500 lines, thread-safe, circular overwrite | P0 | [x] | 1.2 |
+| 2.2 | Implement `infrastructure/logging/fifo_logger.py` — named pipe creation, non-blocking writes | P0 | [x] | 2.1 |
+| 2.3 | Implement `infrastructure/logging/log_consumer.py` — background thread, FIFO → format → RotatingWriter | P0 | [x] | 2.1, 2.2 |
+| 2.4 | Add log format: `[ISO8601] [LEVEL] [AGENT/COMPONENT] Message` | P0 | [x] | 2.3 |
+| 2.5 | Write per-mechanism PRD: `docs/PRD_logging_pipeline.md` | P1 | [x] | 2.4 |
+| 2.6 | Unit test (RED): rotating writer — test 20-file rotation, 500-line limit, circular overwrite | P0 | [x] | 2.1 |
+| 2.7 | Unit test (RED): FIFO logger — test pipe creation, non-blocking writes | P0 | [x] | 2.2 |
+| 2.8 | Unit test (RED): log consumer — test formatting, dispatch to writer | P0 | [x] | 2.3 |
+| 2.9 | Integration test (RED): multiple concurrent loggers → FIFO → no data loss | P1 | [x] | 2.8 |
+| 2.10 | GREEN: implement all tests to pass | P0 | [x] | 2.6–2.9 |
+| 2.11 | REFACTOR: clean up logging code | P1 | [x] | 2.10 |
 
 ---
 
@@ -65,19 +65,19 @@ Every task in this TODO is "done" when **all** of the following are true:
 
 | # | Task | Priority | Status | Depends On |
 |---|------|----------|--------|-----------|
-| 3.1 | Implement `shared/gatekeeper.py` — ApiGatekeeper class with `execute()` method | P0 | [ ] | 1.8, 1.10 |
-| 3.2 | Implement rate limiting: requests_per_minute, requests_per_hour, concurrent_max | P0 | [ ] | 3.1 |
-| 3.3 | Implement FIFO queue for requests when rate limit reached | P0 | [ ] | 3.2 |
-| 3.4 | Implement retry with exponential backoff on transient failures | P0 | [ ] | 3.1 |
-| 3.5 | Implement logging for every API call through gatekeeper | P0 | [ ] | 3.1 |
-| 3.6 | Implement queue status monitoring (`get_queue_status()`) | P1 | [ ] | 3.3 |
-| 3.7 | Implement backpressure when queue is full | P1 | [ ] | 3.3 |
-| 3.8 | Write per-mechanism PRD: `docs/PRD_api_gatekeeper.md` | P1 | [ ] | 3.7 |
-| 3.9 | Unit test (RED): rate limiting — verify limits enforced, verify queue used | P0 | [ ] | 3.2 |
-| 3.10 | Unit test (RED): retry logic — verify backoff, verify max retries | P0 | [ ] | 3.4 |
-| 3.11 | Unit test (RED): queue test — verify FIFO ordering, verify backpressure | P1 | [ ] | 3.3 |
-| 3.12 | GREEN: implement all gatekeeper tests to pass | P0 | [ ] | 3.9–3.11 |
-| 3.13 | REFACTOR: clean up gatekeeper code | P1 | [ ] | 3.12 |
+| 3.1 | Implement `shared/gatekeeper.py` — ApiGatekeeper class with `execute()` method | P0 | [x] | 1.8, 1.10 |
+| 3.2 | Implement rate limiting: requests_per_minute, requests_per_hour, concurrent_max | P0 | [x] | 3.1 |
+| 3.3 | Implement FIFO queue for requests when rate limit reached | P0 | [x] | 3.2 |
+| 3.4 | Implement retry with exponential backoff on transient failures | P0 | [x] | 3.1 |
+| 3.5 | Implement logging for every API call through gatekeeper | P0 | [x] | 3.1 |
+| 3.6 | Implement queue status monitoring (`get_queue_status()`) | P1 | [x] | 3.3 |
+| 3.7 | Implement backpressure when queue is full | P1 | [x] | 3.3 |
+| 3.8 | Write per-mechanism PRD: `docs/PRD_api_gatekeeper.md` | P1 | [x] | 3.7 |
+| 3.9 | Unit test (RED): rate limiting — verify limits enforced, verify queue used | P0 | [x] | 3.2 |
+| 3.10 | Unit test (RED): retry logic — verify backoff, verify max retries | P0 | [x] | 3.4 |
+| 3.11 | Unit test (RED): queue test — verify FIFO ordering, verify backpressure | P1 | [x] | 3.3 |
+| 3.12 | GREEN: implement all gatekeeper tests to pass | P0 | [x] | 3.9–3.11 |
+| 3.13 | REFACTOR: clean up gatekeeper code | P1 | [x] | 3.12 |
 
 ---
 
@@ -85,20 +85,20 @@ Every task in this TODO is "done" when **all** of the following are true:
 
 | # | Task | Priority | Status | Depends On |
 |---|------|----------|--------|-----------|
-| 4.1 | Implement `infrastructure/search/searcher.py` — DuckDuckGo search abstraction | P0 | [ ] | 1.12 |
-| 4.2 | Implement `infrastructure/search/fetcher.py` — fetch URL, extract text, clean HTML | P0 | [ ] | 1.12 |
-| 4.3 | Implement `infrastructure/rag/vector_store.py` — ChromaDB wrapper (init, add, query, reset) | P0 | [ ] | 1.12 |
-| 4.4 | Implement `infrastructure/rag/embedder.py` — sentence-transformers wrapper | P0 | [ ] | 1.12 |
-| 4.5 | Implement `infrastructure/rag/chunker.py` — document chunking (configurable size + overlap) | P0 | [ ] | — |
-| 4.6 | Write per-mechanism PRD: `docs/PRD_search_engine.md` | P1 | [ ] | 4.2 |
-| 4.7 | Write per-mechanism PRD: `docs/PRD_rag_system.md` | P1 | [ ] | 4.5 |
-| 4.8 | Unit test (RED): searcher — mock DDG, verify query → results | P0 | [ ] | 4.1 |
-| 4.9 | Unit test (RED): fetcher — mock HTTP, verify text extraction | P0 | [ ] | 4.2 |
-| 4.10 | Unit test (RED): vector store — mock ChromaDB, verify add/query/reset | P0 | [ ] | 4.3 |
-| 4.11 | Unit test (RED): chunker — verify size, overlap, no data loss | P0 | [ ] | 4.5 |
-| 4.12 | Integration test (RED): search → fetch → chunk → embed → store → retrieve round-trip | P1 | [ ] | 4.1–4.5 |
-| 4.13 | GREEN: implement all search/RAG tests to pass | P0 | [ ] | 4.8–4.12 |
-| 4.14 | REFACTOR: clean up search/RAG code | P1 | [ ] | 4.13 |
+| 4.1 | Implement `infrastructure/search/searcher.py` — DuckDuckGo search abstraction | P0 | [x] | 1.12 |
+| 4.2 | Implement `infrastructure/search/fetcher.py` — fetch URL, extract text, clean HTML | P0 | [x] | 1.12 |
+| 4.3 | Implement `infrastructure/rag/vector_store.py` — ChromaDB wrapper (init, add, query, reset) | P0 | [x] | 1.12 |
+| 4.4 | Implement `infrastructure/rag/embedder.py` — sentence-transformers wrapper | P0 | [x] | 1.12 |
+| 4.5 | Implement `infrastructure/rag/chunker.py` — document chunking (configurable size + overlap) | P0 | [x] | — |
+| 4.6 | Write per-mechanism PRD: `docs/PRD_search_engine.md` | P1 | [x] | 4.2 |
+| 4.7 | Write per-mechanism PRD: `docs/PRD_rag_system.md` | P1 | [x] | 4.5 |
+| 4.8 | Unit test (RED): searcher — mock DDG, verify query → results | P0 | [x] | 4.1 |
+| 4.9 | Unit test (RED): fetcher — mock HTTP, verify text extraction | P0 | [x] | 4.2 |
+| 4.10 | Unit test (RED): vector store — mock ChromaDB, verify add/query/reset | P0 | [x] | 4.3 |
+| 4.11 | Unit test (RED): chunker — verify size, overlap, no data loss | P0 | [x] | 4.5 |
+| 4.12 | Integration test (RED): search → fetch → chunk → embed → store → retrieve round-trip | P1 | [x] | 4.1–4.5 |
+| 4.13 | GREEN: implement all search/RAG tests to pass | P0 | [x] | 4.8–4.12 |
+| 4.14 | REFACTOR: clean up search/RAG code | P1 | [x] | 4.13 |
 
 ---
 
@@ -106,22 +106,22 @@ Every task in this TODO is "done" when **all** of the following are true:
 
 | # | Task | Priority | Status | Depends On |
 |---|------|----------|--------|-----------|
-| 5.1 | Implement `skills/base_skill.py` — abstract `BaseSkill` with `execute()` and `SkillResult` | P0 | [ ] | 1.3 |
-| 5.2 | Implement `skills/router_skill.py` — reads skill.md files, selects appropriate skill | P0 | [ ] | 5.1 |
-| 5.3 | Implement `skills/web_search/` — skill.md + skill.py (DuckDuckGo search) | P0 | [ ] | 5.1, 4.1 |
-| 5.4 | Implement `skills/rag_store/` — skill.md + skill.py | P0 | [ ] | 5.1, 4.3 |
-| 5.5 | Implement `skills/rag_retrieve/` — skill.md + skill.py | P0 | [ ] | 5.1, 4.3 |
-| 5.6 | Implement `skills/fact_check/` — skill.md + skill.py (LLM-powered) | P1 | [ ] | 5.1 |
-| 5.7 | Implement `skills/stance_check/` — skill.md + skill.py | P1 | [ ] | 5.1 |
-| 5.8 | Implement `skills/respect_check/` — skill.md + skill.py | P1 | [ ] | 5.1 |
-| 5.9 | Implement `skills/rebuttal_check/` — skill.md + skill.py | P1 | [ ] | 5.1 |
-| 5.10 | Implement `skills/argument_builder/` — skill.md + skill.py | P1 | [ ] | 5.1 |
-| 5.11 | Implement `skills/rebuttal_builder/` — skill.md + skill.py | P1 | [ ] | 5.1 |
-| 5.12 | Unit test (RED): BaseSkill — verify interface, verify SkillResult | P0 | [ ] | 5.1 |
-| 5.13 | Unit test (RED): RouterSkill — verify skill selection based on context | P0 | [ ] | 5.2 |
-| 5.14 | Unit test (RED): each skill — mock dependencies, verify execute() | P0 | [ ] | 5.3–5.11 |
-| 5.15 | GREEN: implement all skill tests to pass | P0 | [ ] | 5.12–5.14 |
-| 5.16 | REFACTOR: clean up skills code | P1 | [ ] | 5.15 |
+| 5.1 | Implement `skills/base_skill.py` — abstract `BaseSkill` with `execute()` and `SkillResult` | P0 | [x] | 1.3 |
+| 5.2 | Implement `skills/router_skill.py` — reads skill.md files, selects appropriate skill | P0 | [x] | 5.1 |
+| 5.3 | Implement `skills/web_search/` — skill.md + skill.py (DuckDuckGo search) | P0 | [x] | 5.1, 4.1 |
+| 5.4 | Implement `skills/rag_store/` — skill.md + skill.py | P0 | [x] | 5.1, 4.3 |
+| 5.5 | Implement `skills/rag_retrieve/` — skill.md + skill.py | P0 | [x] | 5.1, 4.3 |
+| 5.6 | Implement `skills/fact_check/` — skill.md + skill.py (LLM-powered) | P1 | [x] | 5.1 |
+| 5.7 | Implement `skills/stance_check/` — skill.md + skill.py | P1 | [x] | 5.1 |
+| 5.8 | Implement `skills/respect_check/` — skill.md + skill.py | P1 | [x] | 5.1 |
+| 5.9 | Implement `skills/rebuttal_check/` — skill.md + skill.py | P1 | [x] | 5.1 |
+| 5.10 | Implement `skills/argument_builder/` — skill.md + skill.py | P1 | [x] | 5.1 |
+| 5.11 | Implement `skills/rebuttal_builder/` — skill.md + skill.py | P1 | [x] | 5.1 |
+| 5.12 | Unit test (RED): BaseSkill — verify interface, verify SkillResult | P0 | [x] | 5.1 |
+| 5.13 | Unit test (RED): RouterSkill — verify skill selection based on context | P0 | [x] | 5.2 |
+| 5.14 | Unit test (RED): each skill — mock dependencies, verify execute() | P0 | [x] | 5.3–5.11 |
+| 5.15 | GREEN: implement all skill tests to pass | P0 | [x] | 5.12–5.14 |
+| 5.16 | REFACTOR: clean up skills code | P1 | [x] | 5.15 |
 
 ---
 
@@ -129,23 +129,23 @@ Every task in this TODO is "done" when **all** of the following are true:
 
 | # | Task | Priority | Status | Depends On |
 |---|------|----------|--------|-----------|
-| 6.1 | Implement `shared/llm_client.py` — OpenAI SDK wrapper with retry, error handling | P0 | [ ] | 1.10, 3.1 |
-| 6.2 | Implement `models/agent.py` — data models (Message, TurnContext, AgentResponse) | P0 | [ ] | 1.3 |
-| 6.3 | Implement `models/debate.py` — data models (Round, Score, Penalty, DebateResult) | P0 | [ ] | 1.3 |
-| 6.4 | Implement `models/config_models.py` — pydantic models for config validation | P0 | [ ] | 1.10 |
-| 6.5 | Implement `agents/base_agent.py` — abstract BaseAgent (skill registry, memory, prompt builder) | P0 | [ ] | 5.1, 6.1, 6.2 |
-| 6.6 | Design judge system prompt — debate technique evaluator, NOT domain expert | P0 | [ ] | — |
-| 6.7 | Implement `agents/judge_agent.py` — research criteria, evaluate rounds, score debate | P0 | [ ] | 6.5, 6.6, 5.6–5.9 |
-| 6.8 | Design debater system prompt — stance, evidence-based, must-reply, respectful | P0 | [ ] | — |
-| 6.9 | Implement `agents/debater_agent.py` — research, argument, rebuttal with RAG + search | P0 | [ ] | 6.5, 6.8, 5.3–5.5, 5.10–5.11 |
-| 6.10 | Write per-mechanism PRD: `docs/PRD_judge_evaluation.md` | P1 | [ ] | 6.7 |
-| 6.11 | Write per-mechanism PRD: `docs/PRD_process_management.md` | P1 | [ ] | 7.1 |
-| 6.12 | Unit test (RED): BaseAgent — initialization, skill registry, prompt construction | P0 | [ ] | 6.5 |
-| 6.13 | Unit test (RED): JudgeAgent — scoring, penalty detection (mock LLM) | P0 | [ ] | 6.7 |
-| 6.14 | Unit test (RED): DebaterAgent — research phase, response generation (mock LLM) | P0 | [ ] | 6.9 |
-| 6.15 | Unit test (RED): models — verify data model validation | P0 | [ ] | 6.2–6.4 |
-| 6.16 | GREEN: implement all agent tests to pass | P0 | [ ] | 6.12–6.15 |
-| 6.17 | REFACTOR: clean up agent code | P1 | [ ] | 6.16 |
+| 6.1 | Implement `shared/llm_client.py` — OpenAI SDK wrapper with retry, error handling | P0 | [x] | 1.10, 3.1 |
+| 6.2 | Implement `models/agent.py` — data models (Message, TurnContext, AgentResponse) | P0 | [x] | 1.3 |
+| 6.3 | Implement `models/debate.py` — data models (Round, Score, Penalty, DebateResult) | P0 | [x] | 1.3 |
+| 6.4 | Implement `models/config_models.py` — pydantic models for config validation | P0 | [x] | 1.10 |
+| 6.5 | Implement `agents/base_agent.py` — abstract BaseAgent (skill registry, memory, prompt builder) | P0 | [x] | 5.1, 6.1, 6.2 |
+| 6.6 | Design judge system prompt — debate technique evaluator, NOT domain expert | P0 | [x] | — |
+| 6.7 | Implement `agents/judge_agent.py` — research criteria, evaluate rounds, score debate | P0 | [x] | 6.5, 6.6, 5.6–5.9 |
+| 6.8 | Design debater system prompt — stance, evidence-based, must-reply, respectful | P0 | [x] | — |
+| 6.9 | Implement `agents/debater_agent.py` — research, argument, rebuttal with RAG + search | P0 | [x] | 6.5, 6.8, 5.3–5.5, 5.10–5.11 |
+| 6.10 | Write per-mechanism PRD: `docs/PRD_judge_evaluation.md` | P1 | [x] | 6.7 |
+| 6.11 | Write per-mechanism PRD: `docs/PRD_process_management.md` | P1 | [x] | 7.1 |
+| 6.12 | Unit test (RED): BaseAgent — initialization, skill registry, prompt construction | P0 | [x] | 6.5 |
+| 6.13 | Unit test (RED): JudgeAgent — scoring, penalty detection (mock LLM) | P0 | [x] | 6.7 |
+| 6.14 | Unit test (RED): DebaterAgent — research phase, response generation (mock LLM) | P0 | [x] | 6.9 |
+| 6.15 | Unit test (RED): models — verify data model validation | P0 | [x] | 6.2–6.4 |
+| 6.16 | GREEN: implement all agent tests to pass | P0 | [x] | 6.12–6.15 |
+| 6.17 | REFACTOR: clean up agent code | P1 | [x] | 6.16 |
 
 ---
 
@@ -153,17 +153,17 @@ Every task in this TODO is "done" when **all** of the following are true:
 
 | # | Task | Priority | Status | Depends On |
 |---|------|----------|--------|-----------|
-| 7.1 | Implement `shared/process_manager.py` — spawn agents as processes, enforce timeouts | P0 | [ ] | — |
-| 7.2 | Implement watchdog mechanism — keep-alive pings, detect stuck processes | P0 | [ ] | 7.1 |
-| 7.3 | Implement SIGKILL on timeout — log event, record penalty, fallback response | P0 | [ ] | 7.1 |
-| 7.4 | Implement cumulative penalty tracking per agent | P1 | [ ] | 7.1 |
-| 7.5 | Implement IPC via FIFO + JSON between agent processes | P0 | [ ] | 7.1 |
-| 7.6 | Implement `sdk/sdk.py` — SDK entry point: start_debate(), list_topics(), get_results() | P0 | [ ] | 8.1 |
-| 7.7 | Unit test (RED): ProcessManager — timeout triggers kill, penalty recorded | P0 | [ ] | 7.1 |
-| 7.8 | Unit test (RED): Watchdog — detect stuck process, trigger kill | P1 | [ ] | 7.2 |
-| 7.9 | Unit test (RED): IPC — verify JSON communication between mock processes | P0 | [ ] | 7.5 |
-| 7.10 | GREEN: implement all process management tests to pass | P0 | [ ] | 7.7–7.9 |
-| 7.11 | REFACTOR: clean up process management code | P1 | [ ] | 7.10 |
+| 7.1 | Implement `shared/process_manager.py` — spawn agents as processes, enforce timeouts | P0 | [x] | — |
+| 7.2 | Implement watchdog mechanism — keep-alive pings, detect stuck processes | P0 | [x] | 7.1 |
+| 7.3 | Implement SIGKILL on timeout — log event, record penalty, fallback response | P0 | [x] | 7.1 |
+| 7.4 | Implement cumulative penalty tracking per agent | P1 | [x] | 7.1 |
+| 7.5 | Implement IPC via FIFO + JSON between agent processes | P0 | [x] | 7.1 |
+| 7.6 | Implement `sdk/sdk.py` — SDK entry point: start_debate(), list_topics(), get_results() | P0 | [x] | 8.1 |
+| 7.7 | Unit test (RED): ProcessManager — timeout triggers kill, penalty recorded | P0 | [x] | 7.1 |
+| 7.8 | Unit test (RED): Watchdog — detect stuck process, trigger kill | P1 | [x] | 7.2 |
+| 7.9 | Unit test (RED): IPC — verify JSON communication between mock processes | P0 | [x] | 7.5 |
+| 7.10 | GREEN: implement all process management tests to pass | P0 | [x] | 7.7–7.9 |
+| 7.11 | REFACTOR: clean up process management code | P1 | [x] | 7.10 |
 
 ---
 
@@ -171,20 +171,20 @@ Every task in this TODO is "done" when **all** of the following are true:
 
 | # | Task | Priority | Status | Depends On |
 |---|------|----------|--------|-----------|
-| 8.1 | Implement `services/debate_engine.py` — topic loading, agent initialization | P0 | [ ] | 6.7, 6.9, 1.9 |
-| 8.2 | Implement research phase — parallel search for all 3 agents | P0 | [ ] | 8.1, 4.1–4.5 |
-| 8.3 | Implement debate ping loop — **Con → Pro → Judge observes** (10 pings) | P0 | [ ] | 8.1 |
-| 8.4 | Implement final scoring — judge reviews transcript, outputs scores + winner/tie | P0 | [ ] | 8.3, 6.7 |
-| 8.5 | Implement JSON export to `results/<timestamp>_<topic>.json` | P0 | [ ] | 8.4 |
-| 8.6 | Implement `services/scoring_service.py` — weighted score computation, penalty application | P0 | [ ] | 6.3 |
-| 8.7 | Implement `main.py` — CLI entry point consuming SDK (argparse + rich) | P0 | [ ] | 7.6 |
-| 8.8 | Implement CLI flags: `--topic`, `--custom-topic`, `--pings`, `--config`, `--list-topics` | P0 | [ ] | 8.7 |
-| 8.9 | Implement rich terminal output — round headers, agent names, progress bars | P2 | [ ] | 8.7 |
-| 8.10 | Unit test (RED): DebateEngine — mock agents, verify flow, verify JSON output | P0 | [ ] | 8.1 |
-| 8.11 | Unit test (RED): ScoringService — verify weighted scoring, penalty deduction, tie detection | P0 | [ ] | 8.6 |
-| 8.12 | Unit test (RED): CLI — verify argument parsing | P1 | [ ] | 8.8 |
-| 8.13 | GREEN: implement all service tests to pass | P0 | [ ] | 8.10–8.12 |
-| 8.14 | REFACTOR: clean up services code | P1 | [ ] | 8.13 |
+| 8.1 | Implement `services/debate_engine.py` — topic loading, agent initialization | P0 | [x] | 6.7, 6.9, 1.9 |
+| 8.2 | Implement research phase — parallel search for all 3 agents | P0 | [x] | 8.1, 4.1–4.5 |
+| 8.3 | Implement debate ping loop — **Con → Pro → Judge observes** (10 pings) | P0 | [x] | 8.1 |
+| 8.4 | Implement final scoring — judge reviews transcript, outputs scores + winner/tie | P0 | [x] | 8.3, 6.7 |
+| 8.5 | Implement JSON export to `results/<timestamp>_<topic>.json` | P0 | [x] | 8.4 |
+| 8.6 | Implement `services/scoring_service.py` — weighted score computation, penalty application | P0 | [x] | 6.3 |
+| 8.7 | Implement `main.py` — CLI entry point consuming SDK (argparse + rich) | P0 | [x] | 7.6 |
+| 8.8 | Implement CLI flags: `--topic`, `--custom-topic`, `--pings`, `--config`, `--list-topics` | P0 | [x] | 8.7 |
+| 8.9 | Implement rich terminal output — round headers, agent names, progress bars | P2 | [~] | 8.7 |
+| 8.10 | Unit test (RED): DebateEngine — mock agents, verify flow, verify JSON output | P0 | [x] | 8.1 |
+| 8.11 | Unit test (RED): ScoringService — verify weighted scoring, penalty deduction, tie detection | P0 | [x] | 8.6 |
+| 8.12 | Unit test (RED): CLI — verify argument parsing | P1 | [x] | 8.8 |
+| 8.13 | GREEN: implement all service tests to pass | P0 | [x] | 8.10–8.12 |
+| 8.14 | REFACTOR: clean up services code | P1 | [x] | 8.13 |
 
 ---
 
@@ -192,14 +192,14 @@ Every task in this TODO is "done" when **all** of the following are true:
 
 | # | Task | Priority | Status | Depends On |
 |---|------|----------|--------|-----------|
-| 9.1 | Add `--custom-topic` CLI flag | P1 | [ ] | 8.8 |
-| 9.2 | Handle LLM API errors — rate limit, auth error, server error → retry with backoff | P0 | [ ] | 6.1 |
-| 9.3 | Handle search failure — proceed with agent's knowledge, log warning | P1 | [ ] | 4.1 |
-| 9.4 | Handle RAG failure — proceed without retrieval, log warning | P1 | [ ] | 4.3 |
-| 9.5 | Handle agent crash mid-debate — continue, apply penalty to crashed agent | P1 | [ ] | 8.3 |
-| 9.6 | Handle graceful shutdown (Ctrl+C) — save partial results, cleanup FIFO | P1 | [ ] | 8.7 |
-| 9.7 | Handle missing `.env` / missing API key — clear error on startup | P0 | [ ] | 1.5 |
-| 9.8 | Handle edge cases: empty input, null LLM response, concurrent failures | P1 | [ ] | 8.3 |
+| 9.1 | Add `--custom-topic` CLI flag | P1 | [x] | 8.8 |
+| 9.2 | Handle LLM API errors — rate limit, auth error, server error → retry with backoff | P0 | [x] | 6.1 |
+| 9.3 | Handle search failure — proceed with agent's knowledge, log warning | P1 | [x] | 4.1 |
+| 9.4 | Handle RAG failure — proceed without retrieval, log warning | P1 | [x] | 4.3 |
+| 9.5 | Handle agent crash mid-debate — continue, apply penalty to crashed agent | P1 | [x] | 8.3 |
+| 9.6 | Handle graceful shutdown (Ctrl+C) — save partial results, cleanup FIFO | P1 | [~] | 8.7 |
+| 9.7 | Handle missing `.env` / missing API key — clear error on startup | P0 | [x] | 1.5 |
+| 9.8 | Handle edge cases: empty input, null LLM response, concurrent failures | P1 | [x] | 8.3 |
 
 ---
 
@@ -207,17 +207,17 @@ Every task in this TODO is "done" when **all** of the following are true:
 
 | # | Task | Priority | Status | Depends On |
 |---|------|----------|--------|-----------|
-| 10.1 | Integration test (RED): full debate with mocked LLM (verify flow, JSON output) | P0 | [ ] | 8.7 |
-| 10.2 | Integration test (RED): logging pipeline end-to-end | P1 | [ ] | 2.11 |
-| 10.3 | Integration test (RED): SDK entry point — verify CLI → SDK → Services chain | P0 | [ ] | 8.7 |
-| 10.4 | E2E test: real debate with real API — verify non-determinism across 3+ runs | P0 | [ ] | 8.7 |
-| 10.5 | Test: verify penalties correctly applied and reflected in final scores | P1 | [ ] | 10.1 |
-| 10.6 | Test: verify timeout kills agent and records penalty | P1 | [ ] | 7.10 |
-| 10.7 | Test: verify tie detection (both agents equal scoring) | P1 | [ ] | 10.1 |
-| 10.8 | Test: verify Father does NOT intervene during debate | P1 | [ ] | 10.1 |
-| 10.9 | Test: verify Sons → Father one-directional communication | P1 | [ ] | 10.1 |
-| 10.10 | GREEN: implement all integration/E2E tests to pass | P0 | [ ] | 10.1–10.9 |
-| 10.11 | REFACTOR: clean up integration code | P1 | [ ] | 10.10 |
+| 10.1 | Integration test (RED): full debate with mocked LLM (verify flow, JSON output) | P0 | [x] | 8.7 |
+| 10.2 | Integration test (RED): logging pipeline end-to-end | P1 | [x] | 2.11 |
+| 10.3 | Integration test (RED): SDK entry point — verify CLI → SDK → Services chain | P0 | [x] | 8.7 |
+| 10.4 | E2E test: real debate with real API — verify non-determinism across 3+ runs | P0 | [~] | 8.7 |
+| 10.5 | Test: verify penalties correctly applied and reflected in final scores | P1 | [x] | 10.1 |
+| 10.6 | Test: verify timeout kills agent and records penalty | P1 | [x] | 7.10 |
+| 10.7 | Test: verify tie detection (both agents equal scoring) | P1 | [x] | 10.1 |
+| 10.8 | Test: verify Father does NOT intervene during debate | P1 | [x] | 10.1 |
+| 10.9 | Test: verify Sons → Father one-directional communication | P1 | [x] | 10.1 |
+| 10.10 | GREEN: implement all integration/E2E tests to pass | P0 | [x] | 10.1–10.9 |
+| 10.11 | REFACTOR: clean up integration code | P1 | [x] | 10.10 |
 
 ---
 
@@ -225,17 +225,17 @@ Every task in this TODO is "done" when **all** of the following are true:
 
 | # | Task | Priority | Status | Depends On |
 |---|------|----------|--------|-----------|
-| 11.1 | Run `ruff check` — fix all linter errors → **0 errors** | P0 | [ ] | All code |
-| 11.2 | Run `ruff format` — auto-format all code | P0 | [ ] | 11.1 |
-| 11.3 | Run `uv run pytest --cov` — measure coverage | P0 | [ ] | All tests |
-| 11.4 | Achieve **>= 85% coverage** (statement + branch + path) | P0 | [ ] | 11.3 |
-| 11.5 | Add missing tests to reach 85% threshold | P0 | [ ] | 11.4 |
-| 11.6 | Verify all files are **<= 150 lines** — split large files | P0 | [ ] | All code |
-| 11.7 | Verify no hardcoded constants — all from config/env | P0 | [ ] | All code |
-| 11.8 | Verify no secrets/API keys in codebase | P0 | [ ] | All code |
-| 11.9 | Verify docstrings on all public functions and classes | P1 | [ ] | All code |
-| 11.10 | Verify type hints on all public functions | P1 | [ ] | All code |
-| 11.11 | Verify DRY — extract shared logic, remove duplication | P1 | [ ] | All code |
+| 11.1 | Run `ruff check` — fix all linter errors → **0 errors** | P0 | [x] | All code |
+| 11.2 | Run `ruff format` — auto-format all code | P0 | [x] | 11.1 |
+| 11.3 | Run `uv run pytest --cov` — measure coverage | P0 | [x] | All tests |
+| 11.4 | Achieve **>= 85% coverage** (statement + branch + path) | P0 | [x] | 11.3 |
+| 11.5 | Add missing tests to reach 85% threshold | P0 | [x] | 11.4 |
+| 11.6 | Verify all files are **<= 150 lines** — split large files | P0 | [x] | All code |
+| 11.7 | Verify no hardcoded constants — all from config/env | P0 | [x] | All code |
+| 11.8 | Verify no secrets/API keys in codebase | P0 | [x] | All code |
+| 11.9 | Verify docstrings on all public functions and classes | P1 | [x] | All code |
+| 11.10 | Verify type hints on all public functions | P1 | [x] | All code |
+| 11.11 | Verify DRY — extract shared logic, remove duplication | P1 | [x] | All code |
 
 ---
 
@@ -243,25 +243,25 @@ Every task in this TODO is "done" when **all** of the following are true:
 
 | # | Task | Priority | Status | Depends On |
 |---|------|----------|--------|-----------|
-| 12.1 | Move PRD.md, PLAN.md, TODO.md to `docs/` | P0 | [ ] | — |
-| 12.2 | Write `docs/PRD_search_engine.md` — per-mechanism PRD | P1 | [ ] | 4.6 |
-| 12.3 | Write `docs/PRD_rag_system.md` — per-mechanism PRD | P1 | [ ] | 4.7 |
-| 12.4 | Write `docs/PRD_judge_evaluation.md` — per-mechanism PRD | P1 | [ ] | 6.10 |
-| 12.5 | Write `docs/PRD_api_gatekeeper.md` — per-mechanism PRD | P1 | [ ] | 3.8 |
-| 12.6 | Write `docs/PRD_logging_pipeline.md` — per-mechanism PRD | P1 | [ ] | 2.5 |
-| 12.7 | Write `docs/PRD_process_management.md` — per-mechanism PRD | P1 | [ ] | 6.11 |
-| 12.8 | Create Prompt Engineering Log — document all system prompts with rationale, iterations, performance | P0 | [ ] | 6.6, 6.8 |
-| 12.9 | Create token/cost tracking table — per model, per agent | P1 | [ ] | 10.4 |
-| 12.10 | Create `README.md` — installation, usage, examples, architecture, config reference | P0 | [ ] | 8.7 |
-| 12.11 | Add C4 architecture diagrams to README (ASCII or mermaid) | P0 | [ ] | 12.10 |
-| 12.12 | Add screenshots of terminal debate output to README | P0 | [ ] | 10.4 |
-| 12.13 | Add example JSON output to README | P1 | [ ] | 8.5 |
-| 12.14 | Document all CLI flags and config options | P0 | [ ] | 8.8, 1.7 |
-| 12.15 | Document skill system — how skills work, how to add new ones | P2 | [ ] | 5.1 |
-| 12.16 | Create results analysis notebook — per-agent score tables, cross-run comparisons, statistics | P1 | [ ] | 10.4 |
-| 12.17 | Generate visualizations — bar charts (score comparison), line charts (cross-run variance), heatmaps (criteria correlation) | P1 | [ ] | 12.16 |
-| 12.18 | Add License & Credits section to README | P1 | [ ] | 12.10 |
-| 12.19 | Include assignment PDF from Moodle + student photos in submission package | P1 | [ ] | 14.16 |
+| 12.1 | Move PRD.md, PLAN.md, TODO.md to `docs/` | P0 | [x] | — |
+| 12.2 | Write `docs/PRD_search_engine.md` — per-mechanism PRD | P1 | [x] | 4.6 |
+| 12.3 | Write `docs/PRD_rag_system.md` — per-mechanism PRD | P1 | [x] | 4.7 |
+| 12.4 | Write `docs/PRD_judge_evaluation.md` — per-mechanism PRD | P1 | [x] | 6.10 |
+| 12.5 | Write `docs/PRD_api_gatekeeper.md` — per-mechanism PRD | P1 | [x] | 3.8 |
+| 12.6 | Write `docs/PRD_logging_pipeline.md` — per-mechanism PRD | P1 | [x] | 2.5 |
+| 12.7 | Write `docs/PRD_process_management.md` — per-mechanism PRD | P1 | [x] | 6.11 |
+| 12.8 | Create Prompt Engineering Log — document all system prompts with rationale, iterations, performance | P0 | [x] | 6.6, 6.8 |
+| 12.9 | Create token/cost tracking table — per model, per agent | P1 | [x] | 10.4 |
+| 12.10 | Create `README.md` — installation, usage, examples, architecture, config reference | P0 | [x] | 8.7 |
+| 12.11 | Add C4 architecture diagrams to README (ASCII or mermaid) | P0 | [x] | 12.10 |
+| 12.12 | Add screenshots of terminal debate output to README | P0 | [~] | 10.4 |
+| 12.13 | Add example JSON output to README | P1 | [~] | 8.5 |
+| 12.14 | Document all CLI flags and config options | P0 | [x] | 8.8, 1.7 |
+| 12.15 | Document skill system — how skills work, how to add new ones | P2 | [x] | 5.1 |
+| 12.16 | Create results analysis notebook — per-agent score tables, cross-run comparisons, statistics | P1 | [~] | 10.4 |
+| 12.17 | Generate visualizations — bar charts (score comparison), line charts (cross-run variance), heatmaps (criteria correlation) | P1 | [~] | 12.16 |
+| 12.18 | Add License & Credits section to README | P1 | [x] | 12.10 |
+| 12.19 | Include assignment PDF from Moodle + student photos in submission package | P1 | [~] | 14.16 |
 
 ---
 
@@ -269,11 +269,11 @@ Every task in this TODO is "done" when **all** of the following are true:
 
 | # | Task | Priority | Status | Depends On |
 |---|------|----------|--------|-----------|
-| 13.1 | Initialize git repository with meaningful initial commit | P0 | [ ] | 1.6 |
+| 13.1 | Initialize git repository with meaningful initial commit | P0 | [x] | 1.6 |
 | 13.2 | Use feature branches for each phase | P1 | [ ] | 13.1 |
-| 13.3 | Write meaningful commit messages (conventional commits format) | P0 | [ ] | All |
-| 13.4 | Tag version **1.00** | P0 | [ ] | All |
-| 13.5 | Verify git history shows clean development progression | P1 | [ ] | All |
+| 13.3 | Write meaningful commit messages (conventional commits format) | P0 | [x] | All |
+| 13.4 | Tag version **1.00** | P0 | [x] | All |
+| 13.5 | Verify git history shows clean development progression | P1 | [x] | All |
 
 ---
 
@@ -281,22 +281,22 @@ Every task in this TODO is "done" when **all** of the following are true:
 
 | # | Task | Priority | Status | Depends On |
 |---|------|----------|--------|-----------|
-| 14.1 | Verify `.env.example` has placeholder only, no real keys | P0 | [ ] | 1.5 |
-| 14.2 | Verify no `.env` committed (only `.env.example`) | P0 | [ ] | 1.6 |
-| 14.3 | Run `uv sync` on clean environment → verify all installs | P0 | [ ] | 1.14 |
-| 14.4 | Run `ruff check` → verify **0 errors** | P0 | [ ] | 11.1 |
-| 14.5 | Run `uv run pytest --cov` → verify **>= 85% coverage** | P0 | [ ] | 11.4 |
-| 14.6 | Verify all files **<= 150 lines** | P0 | [ ] | 11.6 |
-| 14.7 | Verify version is **1.00** in all versioned files | P0 | [ ] | 1.4 |
-| 14.8 | Verify logging: 20 files created, 500 lines each, FIFO working | P1 | [ ] | 2.11 |
-| 14.9 | Verify JSON output is valid and complete | P0 | [ ] | 8.5 |
-| 14.10 | Verify non-determinism: same debate 5 times, results vary | P0 | [ ] | 10.4 |
-| 14.11 | Verify all penalties work (respect, rebuttal, stance, timeout, lines) | P1 | [ ] | 10.5 |
-| 14.12 | Final code cleanup — remove debug prints, unused imports, dead code | P1 | [ ] | All |
-| 14.13 | Verify README is comprehensive with screenshots, diagrams, examples | P0 | [ ] | 12.10 |
-| 14.14 | Verify all `docs/` PRDs are complete | P0 | [ ] | 12.2–12.7 |
-| 14.15 | Verify Prompt Engineering Log is documented | P0 | [ ] | 12.8 |
-| 14.16 | Package for submission | P0 | [ ] | All |
+| 14.1 | Verify `.env.example` has placeholder only, no real keys | P0 | [x] | 1.5 |
+| 14.2 | Verify no `.env` committed (only `.env.example`) | P0 | [x] | 1.6 |
+| 14.3 | Run `uv sync` on clean environment → verify all installs | P0 | [x] | 1.14 |
+| 14.4 | Run `ruff check` → verify **0 errors** | P0 | [x] | 11.1 |
+| 14.5 | Run `uv run pytest --cov` → verify **>= 85% coverage** | P0 | [x] | 11.4 |
+| 14.6 | Verify all files **<= 150 lines** | P0 | [x] | 11.6 |
+| 14.7 | Verify version is **1.00** in all versioned files | P0 | [x] | 1.4 |
+| 14.8 | Verify logging: 20 files created, 500 lines each, FIFO working | P1 | [x] | 2.11 |
+| 14.9 | Verify JSON output is valid and complete | P0 | [x] | 8.5 |
+| 14.10 | Verify non-determinism: same debate 5 times, results vary | P0 | [~] | 10.4 |
+| 14.11 | Verify all penalties work (respect, rebuttal, stance, timeout, lines) | P1 | [x] | 10.5 |
+| 14.12 | Final code cleanup — remove debug prints, unused imports, dead code | P1 | [x] | All |
+| 14.13 | Verify README is comprehensive with screenshots, diagrams, examples | P0 | [x] | 12.10 |
+| 14.14 | Verify all `docs/` PRDs are complete | P0 | [x] | 12.2–12.7 |
+| 14.15 | Verify Prompt Engineering Log is documented | P0 | [x] | 12.8 |
+| 14.16 | Package for submission | P0 | [~] | All |
 
 ---
 

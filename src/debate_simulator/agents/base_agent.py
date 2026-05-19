@@ -18,6 +18,7 @@ class BaseAgent(LoggingMixin, TimeoutMixin, SkillRegistryMixin, ABC):
         llm_client: Any,
         skills: dict[str, Any] | None = None,
         logger: Any | None = None,
+        timeout_seconds: float = 60.0,
     ) -> None:
         """Create a base agent."""
         self.name = name
@@ -27,6 +28,7 @@ class BaseAgent(LoggingMixin, TimeoutMixin, SkillRegistryMixin, ABC):
         self.logger = logger
         self.memory: list[Message] = []
         self.last_skill_results: dict[str, SkillResult] = {}
+        self.timeout_seconds = timeout_seconds
 
     @final
     def run_turn(self, context: TurnContext) -> AgentResponse:

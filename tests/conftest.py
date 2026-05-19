@@ -4,6 +4,8 @@ from typing import Any
 
 import pytest
 
+from debate_simulator.agents import ConDebaterAgent, JudgeAgent, ProDebaterAgent
+
 
 @dataclass
 class MockLlm:
@@ -61,3 +63,13 @@ def sample_topics() -> list[dict[str, Any]]:
             "con_position": "Against",
         }
     ]
+
+
+@pytest.fixture
+def sample_agents(mock_llm: MockLlm):
+    """Provide a judge and two debater agents for integration tests."""
+    return {
+        "judge": JudgeAgent(name="judge", llm_client=mock_llm),
+        "pro": ProDebaterAgent(name="pro", llm_client=mock_llm),
+        "con": ConDebaterAgent(name="con", llm_client=mock_llm),
+    }

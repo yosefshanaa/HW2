@@ -58,6 +58,7 @@ def test_log_consumer_formats_and_dispatches_messages(tmp_path: Path) -> None:
     logger = FifoLogger(fifo_path)
 
     consumer.start()
+    time.sleep(0.1)
     logger.log("WARNING", "JUDGE", "watching")
     _wait_for_line_count(tmp_path / "logs" / "log_001.log", expected=1)
     consumer.stop()

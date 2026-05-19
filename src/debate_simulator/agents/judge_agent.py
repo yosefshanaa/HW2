@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Any
 
 from debate_simulator.agents.base_agent import BaseAgent
@@ -5,6 +6,9 @@ from debate_simulator.models.agent import AgentResponse, TurnContext
 from debate_simulator.models.debate import RoundEvaluation, Score
 from debate_simulator.shared.constants import AgentRole
 from debate_simulator.skills.base_skill import SkillResult
+
+_PROMPTS_DIR = Path(__file__).parent / "prompts"
+_JUDGE_PROMPT = (_PROMPTS_DIR / "judge_system.md").read_text(encoding="utf-8")
 
 
 class JudgeAgent(BaseAgent):
@@ -36,7 +40,7 @@ class JudgeAgent(BaseAgent):
         return "pro" if pro_total > con_total else "con"
 
     def _build_prompt(self, context: TurnContext) -> str:
-        return f"Judge debate technique for {context.topic}"
+        return _JUDGE_PROMPT.replace("{topic}", context.topic)
 
     def _execute_skills(self, context: TurnContext) -> dict[str, SkillResult]:
         return {}
