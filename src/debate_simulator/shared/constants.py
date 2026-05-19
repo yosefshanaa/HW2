@@ -93,6 +93,7 @@ class FallbackText(str, Enum):
     """Fallback response texts used by infrastructure failures."""
 
     AGENT_TIMEOUT = "Agent timed out"
+    AGENT_CRASH = "Agent crashed"
 
 
 class FifoDefault(float, Enum):

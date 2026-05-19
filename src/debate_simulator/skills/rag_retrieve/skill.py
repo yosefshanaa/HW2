@@ -18,7 +18,10 @@ class RagRetrieveSkill(BaseSkill):
         """Retrieve documents for the provided query."""
         query = str(payload.get("query", ""))
         top_k = int(payload.get("top_k", 1))
-        documents = self.store.query(self.embedder.embed([query]), top_k)
+        try:
+            documents = self.store.query(self.embedder.embed([query]), top_k)
+        except Exception as error:
+            return SkillResult.fail(str(error))
         return SkillResult.ok({"documents": documents})
 
 

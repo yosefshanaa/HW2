@@ -24,3 +24,12 @@ def test_load_settings_rejects_missing_config() -> None:
     """Missing configuration files raise a clear file error."""
     with pytest.raises(FileNotFoundError):
         load_settings(setup_path=Path("missing.json"))
+
+
+def test_settings_require_openai_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Missing OpenAI API key raises a clear startup error."""
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    settings = load_settings()
+
+    with pytest.raises(RuntimeError):
+        settings.require_openai_api_key()

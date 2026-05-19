@@ -93,6 +93,12 @@ class Settings(BaseModel):
     rate_limits: RateLimitsConfig
     openai_api_key: str | None
 
+    def require_openai_api_key(self) -> str:
+        """Return the OpenAI API key or raise a clear startup error."""
+        if not self.openai_api_key:
+            raise RuntimeError("OPENAI_API_KEY is required")
+        return self.openai_api_key
+
 
 def load_settings(
     setup_path: str | Path = ConfigFile.SETUP.value,

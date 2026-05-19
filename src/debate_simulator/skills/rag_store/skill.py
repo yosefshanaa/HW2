@@ -23,7 +23,10 @@ class RagStoreSkill(BaseSkill):
         chunks = self.chunker.chunk(text)
         if chunks:
             metadatas = [{"source": source} for _ in chunks]
-            self.store.add(chunks, self.embedder.embed(chunks), metadatas)
+            try:
+                self.store.add(chunks, self.embedder.embed(chunks), metadatas)
+            except Exception as error:
+                return SkillResult.fail(str(error))
         return SkillResult.ok({"stored": len(chunks)})
 
 

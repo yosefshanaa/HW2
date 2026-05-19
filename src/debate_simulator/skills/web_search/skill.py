@@ -15,7 +15,10 @@ class WebSearchSkill(BaseSkill):
 
     def execute(self, payload: dict[str, Any]) -> SkillResult:
         """Search for the provided query."""
-        results = self.searcher.search(str(payload.get("query", "")))
+        try:
+            results = self.searcher.search(str(payload.get("query", "")))
+        except Exception as error:
+            return SkillResult.fail(str(error))
         return SkillResult.ok({"results": results})
 
 

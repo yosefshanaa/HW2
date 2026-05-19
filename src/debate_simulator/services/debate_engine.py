@@ -3,8 +3,9 @@ from pathlib import Path
 from typing import Any
 
 from debate_simulator.hooks import HookRegistry
-from debate_simulator.models.agent import TurnContext
-from debate_simulator.models.debate import DebateResult, Round
+from debate_simulator.models.agent import AgentResponse, TurnContext
+from debate_simulator.models.debate import DebateResult, Penalty, Round
+from debate_simulator.shared.constants import FallbackText, PenaltyPoints, PenaltyType
 
 
 class DebateEngine:
@@ -43,9 +44,19 @@ class DebateEngine:
         self.rounds = []
         for round_number in range(1, pings + 1):
             self.hooks.emit("on_round_start", ping_num=round_number, topic=topic)
-            con_response = self.con_agent.run_turn(TurnContext(topic=topic, round_number=round_number))
-            pro_response = self.pro_agent.run_turn(
-                TurnContext(topic=topic, round_number=round_number, opponent_last_argument=con_response.text)
+            con_response = self._safe_turn(
+                self.con_agent,
+                TurnContext(topic=topic, round_number=round_number),
+                "con",
+            )
+            pro_response = self._safe_turn(
+                self.pro_agent,
+                TurnContext(
+                    topic=topic,
+                    round_number=round_number,
+                    opponent_last_argument=con_response.text,
+                ),
+                "pro",
             )
             evaluation = self.judge_agent.observe_round(round_number, pro_response.text, con_response.text)
             round_model = Round(
@@ -53,6 +64,7 @@ class DebateEngine:
                 con_argument=con_response.text,
                 pro_argument=pro_response.text,
                 judge_notes=evaluation,
+                penalties=[*con_response.penalties, *pro_response.penalties],
             )
             self.rounds.append(round_model)
             self.hooks.emit("on_round_end", ping_num=round_number, notes=evaluation)
@@ -83,6 +95,19 @@ class DebateEngine:
         self.export_results(result)
         self.hooks.emit("on_debate_end", results=result)
         return result
+
+    def _safe_turn(self, agent: Any, context: TurnContext, agent_name: str) -> AgentResponse:
+        try:
+            return agent.run_turn(context)
+        except Exception as error:
+            penalty = Penalty(
+                type=PenaltyType.EXCEED_TIME,
+                points=PenaltyPoints.EXCEED_TIME.value,
+                reason=str(error),
+                agent=agent_name,
+            )
+            self.hooks.emit("on_penalty", agent=agent_name, penalty=penalty)
+            return AgentResponse.from_text(FallbackText.AGENT_CRASH.value, 0.0, [penalty])
 
 
 __all__ = ["DebateEngine"]
