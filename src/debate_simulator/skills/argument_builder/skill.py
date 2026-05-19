@@ -18,7 +18,9 @@ class ArgumentBuilderSkill(BaseSkill):
         topic = str(payload.get("topic", ""))
         stance = str(payload.get("stance", ""))
         evidence = str(payload.get("evidence", ""))
-        argument = self.llm_client.complete(f"Build argument for {stance}: {topic}\nEvidence: {evidence}")
+        argument = self.llm_client.complete(
+            f"Build argument for {stance}: {topic}\nEvidence: {evidence}"
+        )
         return SkillResult.ok({"argument": argument})
 
 

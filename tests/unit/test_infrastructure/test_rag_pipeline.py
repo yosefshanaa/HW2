@@ -55,7 +55,9 @@ def test_chunker_preserves_overlap_and_content() -> None:
 
 def test_embedder_delegates_to_sentence_transformer_model() -> None:
     """Embedder returns model embeddings as plain float lists."""
-    embedder = SentenceTransformerEmbedder(model_name="fake-model", model_factory=lambda name: FakeModel())
+    embedder = SentenceTransformerEmbedder(
+        model_name="fake-model", model_factory=lambda name: FakeModel()
+    )
 
     embeddings = embedder.embed(["abc", "de"])
 
@@ -81,7 +83,9 @@ def test_vector_store_add_query_and_reset_round_trip(tmp_path) -> None:
 def test_mocked_rag_round_trip(tmp_path) -> None:
     """Chunking, embedding, storing, and retrieval work together with mocks."""
     chunker = DocumentChunker(chunk_size=3, chunk_overlap=1)
-    embedder = SentenceTransformerEmbedder(model_name="fake-model", model_factory=lambda name: FakeModel())
+    embedder = SentenceTransformerEmbedder(
+        model_name="fake-model", model_factory=lambda name: FakeModel()
+    )
     store = ChromaVectorStore(tmp_path, "roundtrip", client_factory=lambda path: FakeClient())
     chunks = chunker.chunk("alpha beta gamma delta")
 

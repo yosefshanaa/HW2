@@ -26,7 +26,9 @@ class RouterSkill(BaseSkill):
     def _load_descriptions(self) -> list[tuple[str, str]]:
         descriptions: list[tuple[str, str]] = []
         for skill_file in sorted(self.skills_path.glob("*/skill.md")):
-            descriptions.append((skill_file.parent.name, skill_file.read_text(encoding="utf-8").lower()))
+            descriptions.append(
+                (skill_file.parent.name, skill_file.read_text(encoding="utf-8").lower())
+            )
         return descriptions
 
     def _score(self, context: str, description: str) -> int:

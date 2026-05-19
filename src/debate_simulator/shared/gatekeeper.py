@@ -39,7 +39,9 @@ class ApiGatekeeper:
         self._active: dict[str, int] = defaultdict(int)
         self._queues: dict[str, Queue[object]] = defaultdict(self._new_queue)
 
-    def execute(self, service: str, api_call: Callable[..., ResultT], *args: Any, **kwargs: Any) -> ResultT:
+    def execute(
+        self, service: str, api_call: Callable[..., ResultT], *args: Any, **kwargs: Any
+    ) -> ResultT:
         """Execute an API call when limits allow, retrying transient failures."""
         limit = self._limit_for(service)
         token = self._wait_for_turn(service, limit)
@@ -137,11 +139,12 @@ class ApiGatekeeper:
         return Queue(maxsize=maxsize)
 
     def _prune(self, requests: list[float], now: float, window_seconds: int) -> None:
-        requests[:] = [requested_at for requested_at in requests if now - requested_at < window_seconds]
+        requests[:] = [
+            requested_at for requested_at in requests if now - requested_at < window_seconds
+        ]
 
     def _log(self, level: str, message: str) -> None:
         if self.logger:
             self.logger(level, "GATEKEEPER", message)
-
 
 __all__ = ["ApiGatekeeper", "QueueFullError"]

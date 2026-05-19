@@ -24,7 +24,9 @@ class Agent:
 class Judge:
     """Judge double for SDK integration."""
 
-    def observe_round(self, round_number: int, pro_argument: str, con_argument: str) -> RoundEvaluation:
+    def observe_round(
+        self, round_number: int, pro_argument: str, con_argument: str
+    ) -> RoundEvaluation:
         """Return empty notes."""
         return RoundEvaluation()
 

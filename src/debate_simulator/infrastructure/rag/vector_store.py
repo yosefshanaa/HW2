@@ -29,7 +29,9 @@ class ChromaVectorStore:
     ) -> None:
         """Add documents and embeddings to the vector store."""
         ids = [str(uuid4()) for _ in documents]
-        self.collection.add(ids=ids, documents=documents, embeddings=embeddings, metadatas=metadatas)
+        self.collection.add(
+            ids=ids, documents=documents, embeddings=embeddings, metadatas=metadatas
+        )
 
     def query(self, query_embeddings: list[list[float]], top_k: int) -> list[str]:
         """Query the vector store and return matching documents."""

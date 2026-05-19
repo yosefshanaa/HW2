@@ -36,7 +36,9 @@ class Judge:
         self.messages_to_sons: list[str] = []
         self.observed: list[tuple[str, str]] = []
 
-    def observe_round(self, round_number: int, pro_argument: str, con_argument: str) -> RoundEvaluation:
+    def observe_round(
+        self, round_number: int, pro_argument: str, con_argument: str
+    ) -> RoundEvaluation:
         """Observe without replying."""
         self.observed.append((con_argument, pro_argument))
         return RoundEvaluation(judge_message=None)

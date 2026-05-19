@@ -15,7 +15,9 @@ class SearchResult:
 class DuckDuckGoSearcher:
     """DuckDuckGo search wrapper executed through the API gatekeeper."""
 
-    def __init__(self, gatekeeper: Any, max_results: int, ddgs_factory: Callable[[], Any] | None = None) -> None:
+    def __init__(
+        self, gatekeeper: Any, max_results: int, ddgs_factory: Callable[[], Any] | None = None
+    ) -> None:
         """Create a DuckDuckGo searcher."""
         self.gatekeeper = gatekeeper
         self.max_results = max_results

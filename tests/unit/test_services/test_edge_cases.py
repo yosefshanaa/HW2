@@ -57,7 +57,9 @@ class StableDebater:
 class Judge:
     """Judge test double."""
 
-    def observe_round(self, round_number: int, pro_argument: str, con_argument: str) -> RoundEvaluation:
+    def observe_round(
+        self, round_number: int, pro_argument: str, con_argument: str
+    ) -> RoundEvaluation:
         """Return empty notes."""
         return RoundEvaluation()
 
@@ -87,7 +89,14 @@ def test_rag_retrieve_gracefully_degrades_on_failure() -> None:
 
 def test_llm_client_rejects_empty_response() -> None:
     """Null or empty LLM responses raise a clear error."""
-    client = LlmClient(openai_client=type("Client", (), {"responses": type("R", (), {"create": lambda self, **kw: object()})()})(), gatekeeper=type("G", (), {"execute": lambda self, service, call, *args: call(*args)})(), model="m", temperature=0.7)
+    client = LlmClient(
+        openai_client=type(
+            "Client", (), {"responses": type("R", (), {"create": lambda self, **kw: object()})()}
+        )(),
+        gatekeeper=type("G", (), {"execute": lambda self, service, call, *args: call(*args)})(),
+        model="m",
+        temperature=0.7,
+    )
 
     with pytest.raises(ValueError):
         client.complete("prompt")

@@ -50,7 +50,9 @@ def test_rate_limit_queues_requests_in_fifo_order() -> None:
     results: list[int] = [gatekeeper.execute("test", lambda: 1)]
 
     threads = [
-        threading.Thread(target=lambda value=value: results.append(gatekeeper.execute("test", lambda: value)))
+        threading.Thread(
+            target=lambda value=value: results.append(gatekeeper.execute("test", lambda: value))
+        )
         for value in [2, 3]
     ]
     threads[0].start()

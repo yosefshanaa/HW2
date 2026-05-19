@@ -58,7 +58,9 @@ class DebateEngine:
                 ),
                 "pro",
             )
-            evaluation = self.judge_agent.observe_round(round_number, pro_response.text, con_response.text)
+            evaluation = self.judge_agent.observe_round(
+                round_number, pro_response.text, con_response.text
+            )
             round_model = Round(
                 round_number=round_number,
                 con_argument=con_response.text,
@@ -72,13 +74,18 @@ class DebateEngine:
 
     def run_final_scoring(self) -> tuple[dict[str, Any], str]:
         """Run final judge scoring."""
-        scores = self.judge_agent.evaluate_debate([round_model.model_dump_json() for round_model in self.rounds])
+        scores = self.judge_agent.evaluate_debate(
+            [round_model.model_dump_json() for round_model in self.rounds]
+        )
         return scores, self.judge_agent.declare_winner(scores)
 
     def export_results(self, result: DebateResult) -> Path:
         """Export a debate result to JSON."""
         self.results_path.mkdir(parents=True, exist_ok=True)
-        path = self.results_path / f"{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}_{result.debate_id}.json"
+        path = (
+            self.results_path
+            / f"{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}_{result.debate_id}.json"
+        )
         path.write_text(result.model_dump_json(indent=2), encoding="utf-8")
         return path
 
@@ -91,7 +98,9 @@ class DebateEngine:
         self.run_research_phase(topic)
         rounds = self.run_debate_pings(topic, pings)
         scores, winner = self.run_final_scoring()
-        result = DebateResult(topic=topic, rounds=rounds, final_scores=scores, winner=winner, config=debate_config)
+        result = DebateResult(
+            topic=topic, rounds=rounds, final_scores=scores, winner=winner, config=debate_config
+        )
         self.export_results(result)
         self.hooks.emit("on_debate_end", results=result)
         return result

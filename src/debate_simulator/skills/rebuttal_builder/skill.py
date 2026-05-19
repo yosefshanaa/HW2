@@ -17,7 +17,9 @@ class RebuttalBuilderSkill(BaseSkill):
         """Build a rebuttal through the LLM client."""
         opponent_argument = str(payload.get("opponent_argument", ""))
         context = str(payload.get("context", ""))
-        rebuttal = self.llm_client.complete(f"Rebut opponent: {opponent_argument}\nContext: {context}")
+        rebuttal = self.llm_client.complete(
+            f"Rebut opponent: {opponent_argument}\nContext: {context}"
+        )
         return SkillResult.ok({"rebuttal": rebuttal})
 
 

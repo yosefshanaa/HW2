@@ -74,7 +74,9 @@ class JsonFifo:
         """Write one JSON payload to the FIFO."""
         os.write(self._descriptor, f"{json.dumps(payload)}\n".encode())
 
-    def read(self, timeout_seconds: float = FifoDefault.READ_TIMEOUT_SECONDS.value) -> dict[str, Any]:
+    def read(
+        self, timeout_seconds: float = FifoDefault.READ_TIMEOUT_SECONDS.value
+    ) -> dict[str, Any]:
         """Read one JSON payload from the FIFO."""
         deadline = time.perf_counter() + timeout_seconds
         buffer = b""

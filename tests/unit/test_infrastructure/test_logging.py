@@ -115,7 +115,9 @@ def _wait_for_total_lines(directory: Path, expected: int) -> None:
 
 
 def _total_lines(directory: Path) -> int:
-    return sum(len(path.read_text(encoding="utf-8").splitlines()) for path in directory.glob("*.log"))
+    return sum(
+        len(path.read_text(encoding="utf-8").splitlines()) for path in directory.glob("*.log")
+    )
 
 
 def stat_is_fifo(path: Path) -> bool:

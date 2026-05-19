@@ -35,7 +35,9 @@ class AgentResponse(BaseModel):
     penalties: list[Any] = Field(default_factory=list)
 
     @classmethod
-    def from_text(cls, text: str, time_seconds: float, penalties: list[Any] | None = None) -> "AgentResponse":
+    def from_text(
+        cls, text: str, time_seconds: float, penalties: list[Any] | None = None
+    ) -> "AgentResponse":
         """Create an agent response and compute line count."""
         return cls(
             text=text,

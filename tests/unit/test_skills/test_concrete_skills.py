@@ -71,7 +71,9 @@ def test_rag_retrieve_skill_queries_store() -> None:
     store = FakeStore()
     store.documents = ["alpha", "beta"]
 
-    result = RagRetrieveSkill(store=store, embedder=FakeEmbedder()).execute({"query": "alpha", "top_k": 1})
+    result = RagRetrieveSkill(store=store, embedder=FakeEmbedder()).execute(
+        {"query": "alpha", "top_k": 1}
+    )
 
     assert result.data == {"documents": ["alpha"]}
 
@@ -113,6 +115,8 @@ def test_argument_builder_skill_uses_llm() -> None:
 
 def test_rebuttal_builder_skill_uses_llm() -> None:
     """RebuttalBuilderSkill builds rebuttals through the LLM client."""
-    result = RebuttalBuilderSkill(llm_client=FakeLlm()).execute({"opponent_argument": "AI is risky"})
+    result = RebuttalBuilderSkill(llm_client=FakeLlm()).execute(
+        {"opponent_argument": "AI is risky"}
+    )
 
     assert result.data == {"rebuttal": "llm:Rebut "}

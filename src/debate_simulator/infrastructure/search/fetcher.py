@@ -9,7 +9,9 @@ from urllib.request import urlopen
 class UrlFetcher:
     """URL text fetcher executed through the API gatekeeper."""
 
-    def __init__(self, gatekeeper: Any, timeout_seconds: int, opener: Callable[..., Any] = urlopen) -> None:
+    def __init__(
+        self, gatekeeper: Any, timeout_seconds: int, opener: Callable[..., Any] = urlopen
+    ) -> None:
         """Create a fetcher with a timeout and opener."""
         self.gatekeeper = gatekeeper
         self.timeout_seconds = timeout_seconds

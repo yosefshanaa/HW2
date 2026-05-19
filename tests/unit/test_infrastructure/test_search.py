@@ -36,7 +36,9 @@ def test_searcher_returns_structured_results_through_gatekeeper() -> None:
 
     results = searcher.search("debate rubric")
 
-    assert results == [SearchResult(title="debate rubric", url="https://example.com", snippet="summary")]
+    assert results == [
+        SearchResult(title="debate rubric", url="https://example.com", snippet="summary")
+    ]
 
 
 def test_fetcher_extracts_clean_text_through_gatekeeper() -> None:

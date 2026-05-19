@@ -30,7 +30,9 @@ class FakeJudge:
         """Create fake judge records."""
         self.observed: list[tuple[str, str]] = []
 
-    def observe_round(self, round_number: int, pro_argument: str, con_argument: str) -> RoundEvaluation:
+    def observe_round(
+        self, round_number: int, pro_argument: str, con_argument: str
+    ) -> RoundEvaluation:
         """Record arguments without replying."""
         self.observed.append((con_argument, pro_argument))
         return RoundEvaluation(pro_notes="pro", con_notes="con", judge_message=None)

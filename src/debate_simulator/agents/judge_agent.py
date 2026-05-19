@@ -15,7 +15,9 @@ class JudgeAgent(BaseAgent):
         super().__init__(name=name, role=AgentRole.JUDGE, llm_client=llm_client, skills=skills)
         self.rubric = ""
 
-    def observe_round(self, round_number: int, pro_argument: str, con_argument: str) -> RoundEvaluation:
+    def observe_round(
+        self, round_number: int, pro_argument: str, con_argument: str
+    ) -> RoundEvaluation:
         """Observe one round and return private judge notes."""
         notes = f"Round {round_number}: pro={pro_argument}; con={con_argument}"
         return RoundEvaluation(pro_notes=notes, con_notes=notes, judge_message=None)
