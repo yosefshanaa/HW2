@@ -8,6 +8,16 @@
 - Priority: **P0** (critical) | **P1** (high) | **P2** (medium) | **P3** (low)
 - DoD = Definition of Done per task
 
+### Definition of Done Template
+
+Every task in this TODO is "done" when **all** of the following are true:
+1. The task's deliverable exists in the codebase (code, test, doc, or config file)
+2. All associated tests pass (`uv run pytest` — no failures)
+3. `ruff check` passes with 0 errors on the new code
+4. The file is **<= 150 lines** (if it's a Python file)
+5. The task's commit has a meaningful message following conventional commits format
+6. No hardcoded constants — all from config/env/constants
+
 ---
 
 ## Phase 1: Project Foundation & UV Setup
@@ -28,6 +38,8 @@
 | 1.12 | Add all project dependencies to `pyproject.toml` via `uv add` | P0 | [ ] | 1.1 |
 | 1.13 | Run `uv lock` to generate `uv.lock` | P0 | [ ] | 1.12 |
 | 1.14 | Verify `uv sync` installs everything on clean environment | P0 | [ ] | 1.13 |
+| 1.15 | Create `src/debate_simulator/__main__.py` — enable `python -m debate_simulator` execution | P0 | [ ] | 1.1 |
+| 1.16 | Design shared test fixtures in `tests/conftest.py` — mock LLM, mock search, mock RAG, sample topics, sample agents | P0 | [ ] | 1.3 |
 
 ---
 
@@ -161,7 +173,7 @@
 |---|------|----------|--------|-----------|
 | 8.1 | Implement `services/debate_engine.py` — topic loading, agent initialization | P0 | [ ] | 6.7, 6.9, 1.9 |
 | 8.2 | Implement research phase — parallel search for all 3 agents | P0 | [ ] | 8.1, 4.1–4.5 |
-| 8.3 | Implement debate ping loop — Pro → Con → Judge observes (10 pings) | P0 | [ ] | 8.1 |
+| 8.3 | Implement debate ping loop — **Con → Pro → Judge observes** (10 pings) | P0 | [ ] | 8.1 |
 | 8.4 | Implement final scoring — judge reviews transcript, outputs scores + winner/tie | P0 | [ ] | 8.3, 6.7 |
 | 8.5 | Implement JSON export to `results/<timestamp>_<topic>.json` | P0 | [ ] | 8.4 |
 | 8.6 | Implement `services/scoring_service.py` — weighted score computation, penalty application | P0 | [ ] | 6.3 |
@@ -246,6 +258,10 @@
 | 12.13 | Add example JSON output to README | P1 | [ ] | 8.5 |
 | 12.14 | Document all CLI flags and config options | P0 | [ ] | 8.8, 1.7 |
 | 12.15 | Document skill system — how skills work, how to add new ones | P2 | [ ] | 5.1 |
+| 12.16 | Create results analysis notebook — per-agent score tables, cross-run comparisons, statistics | P1 | [ ] | 10.4 |
+| 12.17 | Generate visualizations — bar charts (score comparison), line charts (cross-run variance), heatmaps (criteria correlation) | P1 | [ ] | 12.16 |
+| 12.18 | Add License & Credits section to README | P1 | [ ] | 12.10 |
+| 12.19 | Include assignment PDF from Moodle + student photos in submission package | P1 | [ ] | 14.16 |
 
 ---
 
@@ -288,10 +304,10 @@
 
 | Category | Count |
 |----------|-------|
-| Total tasks | **115** |
-| P0 (critical) | **72** |
-| P1 (high) | **35** |
-| P2 (medium) | **8** |
+| Total tasks | **121** |
+| P0 (critical) | **75** |
+| P1 (high) | **38** |
+| P2 (medium) | **9** |
 | P3 (low) | **0** |
 | Phases | **14** |
 
@@ -300,7 +316,19 @@
 | Requirement | Where | Status |
 |-------------|-------|--------|
 | SDK architecture — single entry point for ALL logic | `sdk/sdk.py` | Covered: 7.6 |
-| OOP with 2+ inheritance levels | `agents/base_agent.py` | Covered: 6.5 |
+| OOP 2+ inheritance levels | `agents/base_agent.py` → `DebaterAgent` → `ProDebaterAgent/ConDebaterAgent` | Covered: 6.5 |
+| Template Method pattern | `BaseAgent.run_turn()` with hooks | Covered: ADR-009 |
+| Mixins (one behavior each) | `TimeoutMixin`, `LoggingMixin`, `SkillRegistryMixin` | Covered: ADR-009 |
+| Plugin lifecycle hooks | `hooks/` — on_debate_start, on_round_start, on_penalty, on_round_end, on_debate_end | Covered: 4.9 PLAN, 7.5 TODO |
+| Context Engineering (Write/Select) | `docs/PRD_context_engineering.md` | Covered: PRD §3.9 |
+| Session management | Per-debate scoped context, 5 lifecycle states | Covered: PRD §3.10 |
+| ISO/IEC 25010 quality | PRD §4.13 | Covered: PRD §4.13 |
+| Results visualization | `notebooks/` + bar/line/heatmap charts | Covered: 12.16, 12.17 |
+| License & Credits | README §License | Covered: 12.18 |
+| Submission artifact | Assignment PDF + photos | Covered: 12.19 |
+| conftest.py shared fixtures | `tests/conftest.py` | Covered: 1.16 |
+| __main__.py | `src/debate_simulator/__main__.py` | Covered: 1.15 |
+| Con starts first | Ping loop: Con → Pro → Judge | Covered: 8.3 |
 | API Gatekeeper for all external calls | `shared/gatekeeper.py` | Covered: 3.1–3.7 |
 | Rate limiting from config file | `config/rate_limits.json` | Covered: 1.8, 3.2 |
 | Queue testing | Phase 3 tests | Covered: 3.11 |

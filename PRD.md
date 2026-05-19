@@ -77,9 +77,9 @@ The judge is **not a domain expert** — he evaluates based on **argumentation q
 4. Both debaters perform internet research on the topic in parallel
 5. Debate begins — 10 Pings (rounds), each side speaks once per ping:
    Ping N:
-     a. Pro Agent presents argument/rebuttal — timed (timeout enforced)
-     b. Con Agent responds to Pro's argument — timed (timeout enforced)
-     c. Judge observes and takes notes (does NOT intervene)
+      a. Con Agent presents argument/rebuttal — timed (timeout enforced)
+      b. Pro Agent responds to Con's argument — timed (timeout enforced)
+      c. Judge observes and takes notes (does NOT intervene)
 6. After 10 pings:
    a. Judge reviews full debate transcript (JSON)
    b. Judge scores each debater on multiple criteria (see §3.6)
@@ -192,7 +192,32 @@ See also: `docs/PRD_judge_evaluation.md`
 | `argument_builder` | Debaters | Construct a structured argument with evidence |
 | `rebuttal_builder` | Debaters | Construct a targeted rebuttal to the opponent's point |
 
-### 3.9 Non-Determinism
+### 3.9 Context Engineering
+
+- The system uses **Context Engineering** (not just Prompt Engineering) to manage the LLM context window
+- Two strategies are employed:
+
+#### Write Strategy
+- The **judge** uses Write at initialization: searches internet for debate judging criteria, extracts key rubrics, and writes a condensed evaluation prompt into the context window
+- This extracted document replaces raw search results — keeping only what fits in the context window
+
+#### Select Strategy
+- During debate rounds, debaters use Select: query the RAG vector store to retrieve only the most relevant chunks for their current argument
+- Only top-k relevant chunks are loaded — the rest stay on disk, not in memory
+
+### 3.10 Session Management
+
+- Each debate run is a **Session** — a time-bounded conversation with scoped context
+- Session lifecycle:
+  1. **INIT** — agents initialized, system prompts loaded
+  2. **RESEARCH** — agents search internet, populate RAG stores (session-scoped, deleted after debate)
+  3. **DEBATE** — 10 pings exchanged, all messages stored in session history
+  4. **SCORING** — judge reviews full session transcript
+  5. **FINISHED** — results exported to JSON, session context cleared, RAG stores purged
+- All messages within a session are stored and queryable until session ends
+- Context window is managed per-session: the judge's criteria document (Write) + RAG retrieval (Select) both operate within the session's scope
+
+### 3.11 Non-Determinism
 
 - The system is designed so that **the same debate can produce different winners** across runs
 - This is achieved through:
@@ -201,7 +226,27 @@ See also: `docs/PRD_judge_evaluation.md`
   - Order of retrieved RAG chunks may vary
 - No seed fixing, no result caching
 
-### 3.10 IPC & Communication
+### 3.13 Acceptance Criteria & KPIs
+
+| # | Requirement | KPI | Acceptance Criterion |
+|---|-------------|-----|-------------------|
+| AC-01 | Judge evaluates debate technique, not domain knowledge | Judge uses internet-sourced rubric | Judge system prompt contains no domain expertise claims |
+| AC-02 | 10 pings completed per debate | 10 JSON ping entries in output | `pings` array length == 10 |
+| AC-03 | Each agent respects timeout | 0 uncontrolled hangs | Every agent turn completes within `agent_timeout` or is killed + penalized |
+| AC-04 | Debaters reply to opponent's previous point | Penalty rate < 2 per debate | `rebuttal_check` flags <= 1 ignored rebuttal per agent |
+| AC-05 | Non-deterministic results | Different winners across runs | Same topic run 3x produces >= 2 different winners or 1 tie |
+| AC-06 | JSON output validity | Parseable JSON | `results/*.json` passes JSON schema validation |
+| AC-07 | Score breakdown completeness | 5 dimensions scored per debater | Each `final_scores` entry has all 5 weighted dimensions |
+| AC-08 | Logging pipeline | 20 files × 500 lines | `logs/log_*.log` has exactly 20 files, none exceeding 500 lines |
+| AC-09 | API Gatekeeper coverage | All external calls through gatekeeper | Zero direct `openai.ChatCompletion` calls outside gatekeeper |
+| AC-10 | Test coverage | >= 85% | `pytest --cov` reports >= 85% statement + branch coverage |
+| AC-11 | Linter | 0 errors | `ruff check` exits with code 0 |
+| AC-12 | Session cleanup | No stale data after debate | RAG store and session context are empty after FINISHED |
+| AC-13 | Father does not intervene | Zero bidirectional messages | Judge never sends messages to sons during debate pings |
+| AC-14 | Ties are possible | Judge can output "tie" | `winner` field can be `"tie"` |
+| AC-15 | No hardcoded constants | All from config/env | Zero literal values for URLs, timeouts, API keys in source code |
+
+### 3.14 IPC & Communication
 
 - Agents communicate via **Inter-Process Communication (IPC)**
 - Communication protocol: **JSON** (JSONL format for streaming)
@@ -350,7 +395,25 @@ See also: `docs/PRD_process_management.md`
 
 - Track API token usage per model (input tokens, output tokens, total cost)
 - Track per agent (Judge, Pro, Con)
+- **Cost optimization strategies**:
+  - Use `gpt-4o-mini` for judge check skills (fact_check, respect_check) — cheaper than main model
+  - Use batch processing for research phase queries where possible
+  - Minimize context window usage via Context Engineering (Write/Select)
+  - Truncate RAG chunks to essential content only
 - Summary table in results and README
+
+### 4.13 Quality Model (ISO/IEC 25010)
+
+| Quality Attribute | How Addressed | NFR Reference |
+|-------------------|--------------|--------------|
+| **Functional Suitability** | All debate features work end-to-end: topics, pings, scoring, penalties | §3.1–3.8 |
+| **Performance Efficiency** | Agent timeouts, watchdog, rate limiting prevent resource exhaustion | §3.4, §4.3 |
+| **Compatibility** | Runs on Python 3.10+, terminal-only, minimal packages | §4.4 |
+| **Usability** | CLI with rich output, clear error messages, one-command install | §4.4 |
+| **Reliability** | Graceful degradation, edge case handling, auto-retry, watchdog recovery | §4.7 |
+| **Security** | No secrets in code, .gitignore, .env.example only, least-privilege API keys | §4.5 |
+| **Maintainability** | DRY, SRP, docstrings, type hints, 150-line files, TDD, linter | §4.8, §4.9 |
+| **Portability** | UV for deps, pyproject.toml, no platform-specific code | §4.5 |
 
 ---
 
@@ -371,7 +434,7 @@ See also: `docs/PRD_process_management.md`
 | API Gatekeeper | Custom implementation | Rate limiting, queuing, retry |
 | Testing | `pytest` + `pytest-asyncio` + `pytest-cov` | TDD with coverage |
 | Linting | `ruff` | Fast Python linter |
-| OOP Design | Inheritance + Mixins where appropriate | Not strictly OOP — use where it makes sense |
+| OOP Design | Inheritance (2+ levels), Mixins (one behavior each), Template Method | BaseAgent→DebaterAgent→ProDebaterAgent; TimeoutMixin, LoggingMixin |
 
 ---
 
@@ -403,5 +466,7 @@ Each major mechanism has its own dedicated PRD document:
 | `docs/PRD_api_gatekeeper.md` | API Gatekeeper (rate limiting, queuing, retry) |
 | `docs/PRD_logging_pipeline.md` | FIFO logging (20 files, 500 lines, rotation) |
 | `docs/PRD_process_management.md` | Process management (timeouts, watchdog, SIGKILL) |
+| `docs/PRD_context_engineering.md` | Context Engineering (Write/Select strategy, context window management) |
+| `docs/PRD_session_management.md` | Session lifecycle, context scoping, message history |
 
 Each per-mechanism PRD contains: mechanism description, functional requirements, interface definition, acceptance criteria, edge cases, and implementation constraints.

@@ -252,16 +252,36 @@ debate-simulator/
          [Judge only receives from both]
 ```
 
-### 2.4 Code Diagram — Key Classes
+### 2.4 Code Diagram — Key Classes (3-level Inheritance)
 
 ```
 BaseAgent (ABC)
 ├── JudgeAgent
+│   ├── mixins: [LoggingMixin, TimeoutMixin]
 │   ├── skills: [fact_check, stance_check, respect_check, rebuttal_check]
 │   └── methods: evaluate_round(), score_debate(), declare_winner()
-└── DebaterAgent
-    ├── skills: [web_search, rag_store, rag_retrieve, argument_builder, rebuttal_builder]
-    └── methods: research(), build_argument(), build_rebuttal()
+└── DebaterAgent (ABC)
+    ├── ProDebaterAgent (concrete)
+    │   ├── mixins: [LoggingMixin, TimeoutMixin]
+    │   └── stance: PRO
+    └── ConDebaterAgent (concrete)
+        ├── mixins: [LoggingMixin, TimeoutMixin]
+        └── stance: CON
+    Common:
+      skills: [web_search, rag_store, rag_retrieve, argument_builder, rebuttal_builder]
+      methods: research(), build_argument(), build_rebuttal()
+
+Mixins (one behavior each):
+├── LoggingMixin      — provides self.log() method
+├── TimeoutMixin      — provides self.enforce_timeout() method
+└── SkillRegistryMixin — provides self.use_skill() method
+
+Template Method in BaseAgent:
+    run_turn(context)  [final]  ← calls hook methods:
+      ├── _build_prompt(context)      [overridable]
+      ├── _execute_skills(context)    [overridable]
+      ├── _call_llm(prompt)           [overridable]
+      └── _validate_response(resp)    [overridable]
 
 BaseSkill (ABC)
 ├── RouterSkill
@@ -299,6 +319,95 @@ RotatingWriter
 ├── write(entry)
 ├── _rotate_if_needed()
 └── _get_active_file()
+```
+
+### 2.5 UML Sequence Diagram — Debate Ping Flow
+
+```
+ConAgent      ProAgent      JudgeAgent    ProcessMgr    FIFO
+   │             │              │             │          │
+   │────argument─▶│              │             │          │
+   │             │              │             │          │
+   │             │───response───▶│             │          │
+   │             │              │             │          │
+   │             │              │              │◀──ping──│
+   │             │              │             │          │
+   │             │              │◀──observe───│          │
+   │             │              │             │          │
+   │◀────────────│──────────────│             │          │
+   │             │              │             │          │
+```
+
+### 2.6 UML State Machine Diagram — Agent Lifecycle
+
+```
+              ┌──────┐
+              │ IDLE │
+              └──┬───┘
+                 │ initialize()
+                 ▼
+          ┌──────────────┐
+          │ INITIALIZING │──timeout──▶ KILLED
+          └──────┬───────┘
+                 │
+                 ▼
+         ┌─────────────┐
+         │  RESEARCHING  │──timeout──▶ KILLED
+         └──────┬──────┘
+                 │
+                 ▼
+      ┌────────────────────┐
+      │      DEBATING      │◀──▶(loop 10x)
+      │ ┌───────────────┐ │
+      │ │ AWAITING_TURN │ │──timeout──▶ KILLED
+      │ │ GENERATING_RESP│ │
+      │ │ VALIDATING     │ │
+      │ └───────────────┘ │
+      └────────┬─────────┘
+               │
+               ▼
+         ┌─────────────┐
+         │   SCORING    │──timeout──▶ KILLED (penalty to unresponsive agent)
+         └──────┬──────┘
+                │
+                ▼
+          ┌──────────┐
+          │ FINISHED │
+          └──────────┘
+```
+
+### 2.7 UML Deployment Diagram
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    Single Machine                        │
+│                                                          │
+│  ┌───────────────────────────────────────────────────┐   │
+│  │                  CLI (main.py)                     │   │
+│  └──────────────────────┬────────────────────────────┘   │
+│                         │                                │
+│              ┌──────────┼──────────┐                     │
+│              ▼          ▼          ▼                     │
+│  ┌──────────────┐ ┌──────────┐ ┌──────────┐              │
+│  │ ConAgent     │ │ ProAgent │ │ Judge    │              │
+│  │ Process 1    │ │ Process 2 │ │ Process 3│              │
+│  └──────┬───────┘ └────┬─────┘ └────┬─────┘              │
+│         │              │           │                     │
+│         ▼              ▼           ▼                     │
+│  ┌───────────────────────────────────────────────┐       │
+│  │  FIFO Pipes (named pipes for IPC)             │       │
+│  └───────────────────────┬───────────────────────┘       │
+│                          │                                │
+│  ┌──────────────┐  ┌────┴────┐  ┌──────────────┐         │
+│  │ DuckDuckGo   │  │ ChromaDB │  │ log_001.log  │         │
+│  │ (Search API) │  │ (RAG)    │  │ log_002.log  │         │
+│  └──────────────┘  └──────────┘  │    ...       │         │
+│                                  │ log_020.log  │         │
+│  ┌──────────────┐                 └──────────────┘         │
+│  │ OpenAI API   │                                        │
+│  │ (LLM)       │                                        │
+│  └──────────────┘                                        │
+└─────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -353,6 +462,20 @@ RotatingWriter
 - **Trade-offs**: +structured, +parseable, +loggable; -verbose
 - **Alternatives considered**: pickle (security risk), plain text (unstructured)
 
+### ADR-009: Template Method Pattern
+- **Decision**: `BaseAgent.run_turn()` is a **final method** (Template Method) that calls overridable hooks
+- **Context**: Professor §4.2 explicitly requires Template Method pattern for governing flows
+- **Hooks**: `_build_prompt(context)`, `_execute_skills(context)`, `_call_llm(prompt)`, `_validate_response(resp)`
+- **Trade-offs**: +consistent flow enforcement, +easy to extend per-agent behavior; -less flexibility in flow order
+- **Alternatives considered**: Strategy pattern (too loose for fixed flow), plain methods (no guaranteed flow)
+
+### ADR-010: Plugin Architecture with Lifecycle Hooks
+- **Decision**: Expose extensibility via lifecycle hooks that plugins can register
+- **Context**: Professor §12 requires plugin architecture with lifecycle hooks (beforeCreate, afterUpdate, middleware)
+- **Hooks**: `on_debate_start(session)`, `on_round_start(ping_num)`, `on_penalty(agent, penalty)`, `on_round_end(ping_num, notes)`, `on_debate_end(results)`
+- **Trade-offs**: +extensible without modifying core code; -complexity, potential hook ordering issues
+- **Alternatives considered**: Observer pattern (heavier), inheritance-only (less flexible)
+
 ---
 
 ## 4. Detailed Module Design
@@ -360,6 +483,10 @@ RotatingWriter
 ### 4.1 `sdk/sdk.py` — SDK Entry Point
 
 ```
+Input:  topic (str or int), config (Config), options (dict)
+Output: DebateResult (Pydantic model)
+Setup:  LLM client, gatekeeper, logging, session
+
 Responsibilities:
 - Single entry point for ALL debate logic
 - Expose: start_debate(topic, config), list_topics(), get_results()
@@ -367,12 +494,20 @@ Responsibilities:
 - CLI consumes this SDK (not the other way around)
 ```
 
-### 4.2 `agents/base_agent.py` — Base Agent
+### 4.2 `agents/base_agent.py` — Base Agent (Template Method)
 
 ```
+Input:  TurnContext (topic, opponent_last_arg, stance, memory, research)
+Output: AgentResponse (text, lines, time_seconds, penalties)
+Setup:  system_prompt, skills, stance, llm_client
+
 Responsibilities:
 - Define the Agent interface (ABC)
-- Manage LLM client connection (via shared/llm_client.py)
+- Template Method: run_turn(context) [FINAL] calls:
+    → _build_prompt(context) [hook]
+    → _execute_skills(context) [hook]
+    → _call_llm(prompt) [hook]
+    → _validate_response(resp) [hook]
 - Manage skill registry (RouterSkill pattern)
 - Handle prompt construction (Context Engineering)
 - Track memory / conversation history
@@ -382,12 +517,17 @@ Key Design:
 - System prompts loaded from skill.md files
 - use_skill(name, **kwargs) method
 - Each agent runs in its own process via ProcessManager
+- Mixins: LoggingMixin, TimeoutMixin, SkillRegistryMixin
 ```
 
 ### 4.3 `agents/judge_agent.py`
 
 ```
-System prompt responsibilities:
+Input:  RoundContext (pro_arg, con_arg, round_num, transcript)
+Output: RoundEvaluation (pro_notes, con_notes, pro_penalties, con_penalties)
+Setup:  debate_criteria_prompt (from internet search), skills, scoring_weights
+
+Responsibilities:
 - Judge is debate technique evaluator (NOT domain expert)
 - Use research-backed evaluation criteria
 - Define scoring rubric (5 dimensions, weighted)
@@ -397,7 +537,7 @@ System prompt responsibilities:
 Initialization:
 1. Search internet for "competitive debate judging criteria"
 2. Search for "debate tournament scoring rubric"
-3. Build evaluation prompt from gathered criteria
+3. Build evaluation prompt from gathered criteria (Context Engineering: Write)
 4. Load judge-specific skills
 
 Per-round: observe + take notes (no intervention)
@@ -407,12 +547,16 @@ Final: score each debater on 5 dimensions, apply penalties, declare winner/tie
 ### 4.4 `agents/debater_agent.py`
 
 ```
-System prompt responsibilities:
+Input:  TurnContext (topic, opponent_last_arg, stance, memory, rag_context)
+Output: AgentResponse (text, lines, time_seconds, penalties)
+Setup:  stance (Pro/Con), system_prompt, skills, rag_store
+
+Responsibilities:
 - Define the assigned stance (Pro or Con) — randomly assigned
 - Must reply to opponent's last point
 - Respectful tone, politically correct
 - Evidence-based argumentation
-- Use research materials from RAG
+- Use research materials from RAG (Context Engineering: Select)
 
 Research phase: search → fetch → chunk → embed → store → summarize
 Per-round: retrieve RAG → build argument/rebuttal → validate limits
@@ -421,6 +565,10 @@ Per-round: retrieve RAG → build argument/rebuttal → validate limits
 ### 4.5 `shared/gatekeeper.py` — API Gatekeeper
 
 ```
+Input:  api_call (Callable), *args, **kwargs
+Output: APIResponse (result, status, tokens_used, cost)
+Setup:  rate_limits from config/rate_limits.json
+
 Responsibilities:
 - Centralized execution of ALL external API calls
 - Rate limiting: requests_per_minute, requests_per_hour, concurrent_max
@@ -430,26 +578,40 @@ Responsibilities:
 - Queue status monitoring
 - No hardcoded credentials
 
-Implementation:
-- Thread-safe with queue.Queue
+Thread Safety:
+- All queue operations via queue.Queue (thread-safe by design)
+- Rate limit counters protected by threading.Lock
+- Backpressure: queue full → caller blocks or receives QueueFullError
 - Config from config/rate_limits.json
-- Backpressure mechanism when queue is full
 ```
 
 ### 4.6 `shared/process_manager.py`
 
 ```
+Input:  agent (BaseAgent), timeout (int)
+Output: AgentResponse or FallbackResponse (on timeout)
+Setup:  keepalive_interval from config
+
 Responsibilities:
 - Spawn each agent as a separate process (multiprocessing)
 - Enforce per-turn timeout (asyncio.wait_for)
 - Watchdog: periodic keep-alive pings to detect stuck processes
 - On timeout: SIGKILL the process, log event, record penalty
 - Track cumulative penalties per agent
+
+Thread Safety:
+- Signal handlers registered per process
+- Inter-process state via multiprocessing.Queue
+- Watchdog timer uses threading.Timer (daemon thread)
 ```
 
 ### 4.7 `skills/` Module — Router-Skill Pattern
 
 ```
+Input:  context (str), available_skills (list[SkillDescription])
+Output: selected_skill_name (str)
+Setup:  skill.md files loaded from skills/ directory
+
 RouterSkill:
 1. Reads all skill.md descriptions in the skills/ directory
 2. Adds skill descriptions to the System Prompt context
@@ -465,6 +627,10 @@ Each skill directory contains:
 ### 4.8 `infrastructure/logging/` Module
 
 ```
+Input:  level (str), agent (str), message (str)
+Output:  LogEntry (formatted string)
+Setup:  fifo_path, max_files (20), max_lines (500)
+
 fifo_logger.py:
 - Creates named pipe (FIFO) at configured path
 - Provides log(level, agent, message) method
@@ -478,8 +644,29 @@ log_consumer.py:
 rotating_writer.py:
 - 20 files, max 500 lines each
 - Circular: when file 20 is full, file 1 is overwritten
-- Thread-safe writes
+- Thread-safe writes via threading.Lock
 - File naming: log_001.log through log_020.log
+```
+
+### 4.9 Plugin Architecture — Lifecycle Hooks
+
+```
+Input:  event_name (str), event_data (dict)
+Output:  None (fire-and-forget)
+Setup:  hooks registered via register_hook(event, callback)
+
+Available Hooks:
+- on_debate_start(session)        → before first ping
+- on_round_start(ping_num, topic)   → before each ping
+- on_penalty(agent, penalty)       → when judge issues a penalty
+- on_round_end(ping_num, notes)     → after each ping
+- on_debate_end(results)           → after final scoring
+
+Implementation:
+- hooks stored in dict[event_name] → list[callback]
+- Hooks are project-local (not global) — stored in src/debate_simulator/hooks/
+- DebateEngine calls hooks at each lifecycle point
+- Hook failures are logged but do not crash the debate
 ```
 
 ---
