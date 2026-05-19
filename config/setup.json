@@ -1,0 +1,51 @@
+{
+  "version": "1.00",
+  "llm": {
+    "model": "gpt-4o-mini",
+    "temperature": 0.7,
+    "max_tokens": 1024,
+    "api_key_env": "OPENAI_API_KEY"
+  },
+  "debate": {
+    "max_pings": 10,
+    "agent_timeout_seconds": 60,
+    "keepalive_interval_seconds": 10,
+    "max_lines_per_response": 50,
+    "max_tokens_per_response": 1024,
+    "research_timeout_seconds": 120
+  },
+  "search": {
+    "engine": "duckduckgo",
+    "max_results_per_query": 5,
+    "max_research_queries": 10
+  },
+  "rag": {
+    "embedding_model": "all-MiniLM-L6-v2",
+    "chunk_size": 500,
+    "chunk_overlap": 50,
+    "top_k_retrieval": 5,
+    "persist_directory": ".rag_store"
+  },
+  "logging": {
+    "fifo_path": "logs/debate_fifo",
+    "max_files": 20,
+    "max_lines_per_file": 500,
+    "log_level": "INFO"
+  },
+  "penalties": {
+    "disrespect": 5,
+    "ignore_rebuttal": 10,
+    "stance_contradiction": 15,
+    "exceed_lines": 5,
+    "exceed_time": 10
+  },
+  "scoring": {
+    "weights": {
+      "argument_strength": 0.25,
+      "rebuttal_effectiveness": 0.25,
+      "evidence_research": 0.20,
+      "rhetorical_quality": 0.15,
+      "compliance": 0.15
+    }
+  }
+}

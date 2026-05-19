@@ -1,0 +1,12 @@
+.env
+logs/
+.rag_store/
+__pycache__/
+results/
+.venv/
+*.pyc
+.ipynb_checkpoints/
+.pytest_cache/
+.ruff_cache/
+htmlcov/
+.coverage

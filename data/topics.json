@@ -1,0 +1,82 @@
+[
+  {
+    "id": 1,
+    "category": "Sports",
+    "topic": "Barcelona vs Real Madrid — greatest football club",
+    "context": "Compare sporting success, cultural identity, player development, global impact, and historic legacy.",
+    "pro_position": "Barcelona",
+    "con_position": "Real Madrid"
+  },
+  {
+    "id": 2,
+    "category": "Sports",
+    "topic": "Individual sports build character better than team sports",
+    "context": "Evaluate accountability, discipline, resilience, cooperation, and personal growth.",
+    "pro_position": "For",
+    "con_position": "Against"
+  },
+  {
+    "id": 3,
+    "category": "Science",
+    "topic": "AI will replace most jobs by 2050",
+    "context": "Discuss automation, labor markets, new job creation, productivity, and social adaptation.",
+    "pro_position": "For",
+    "con_position": "Against"
+  },
+  {
+    "id": 4,
+    "category": "Science",
+    "topic": "Nuclear energy is the solution to climate change",
+    "context": "Assess emissions, safety, cost, grid reliability, waste, and deployment timelines.",
+    "pro_position": "For",
+    "con_position": "Against"
+  },
+  {
+    "id": 5,
+    "category": "History",
+    "topic": "The British Empire did more good than harm",
+    "context": "Weigh infrastructure, law, trade, exploitation, violence, and long-term consequences.",
+    "pro_position": "For",
+    "con_position": "Against"
+  },
+  {
+    "id": 6,
+    "category": "History",
+    "topic": "Ancient Rome's collapse was inevitable",
+    "context": "Examine governance, economy, military pressure, social cohesion, and contingency.",
+    "pro_position": "For",
+    "con_position": "Against"
+  },
+  {
+    "id": 7,
+    "category": "Current Affairs",
+    "topic": "Universal Basic Income should be implemented globally",
+    "context": "Consider poverty reduction, incentives, fiscal feasibility, automation, and inequality.",
+    "pro_position": "For",
+    "con_position": "Against"
+  },
+  {
+    "id": 8,
+    "category": "Current Affairs",
+    "topic": "Social media does more harm than good to democracy",
+    "context": "Evaluate misinformation, civic engagement, polarization, accountability, and free expression.",
+    "pro_position": "For",
+    "con_position": "Against"
+  },
+  {
+    "id": 9,
+    "category": "Culture",
+    "topic": "Art should never be censored",
+    "context": "Balance artistic freedom, harm prevention, public standards, power, and cultural context.",
+    "pro_position": "For",
+    "con_position": "Against"
+  },
+  {
+    "id": 10,
+    "category": "Culture",
+    "topic": "Remote work weakens company culture",
+    "context": "Discuss collaboration, inclusion, flexibility, mentorship, productivity, and trust.",
+    "pro_position": "For",
+    "con_position": "Against"
+  }
+]
