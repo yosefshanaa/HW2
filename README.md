@@ -171,6 +171,16 @@ CLI (main.py)
 
 For full diagrams see [PLAN.md](docs/PLAN.md).
 
+```mermaid
+flowchart TD
+    CLI[CLI main.py] --> SDK[SDK sdk.py]
+    SDK --> Services[Domain Services]
+    Services --> Agents[Judge / Pro / Con Agents]
+    Services --> Infra[Search / RAG / Logging / Gatekeeper]
+    Infra --> OpenAI[OpenAI API]
+    Infra --> DDG[DuckDuckGo]
+```
+
 ---
 
 ## Configuration
@@ -282,13 +292,33 @@ The judge evaluates each debater on 5 weighted dimensions (0-100% each):
 
 ```json
 {
+  "debate_id": "uuid",
+  "timestamp": "ISO8601",
   "topic": "Barcelona vs Real Madrid",
-  "pings": [ ... ],
+  "version": "1.00",
+  "rounds": [
+    {
+      "round_number": 1,
+      "con_argument": "string",
+      "pro_argument": "string",
+      "judge_notes": {
+        "pro_notes": "string",
+        "con_notes": "string",
+        "judge_message": null
+      },
+      "penalties": []
+    }
+  ],
   "final_scores": {
-    "pro": { "total": 78, "argument_strength": 82, "rebuttal": 75, "evidence": 80, "rhetoric": 76, "compliance": 90, "penalties": -12 },
-    "con": { "total": 72, "argument_strength": 70, "rebuttal": 78, "evidence": 68, "rhetoric": 74, "compliance": 85, "penalties": -8 }
+    "pro": { "total": 78, "breakdown": { "compliance": 90 }, "penalties_applied": [] },
+    "con": { "total": 72, "breakdown": { "compliance": 85 }, "penalties_applied": [] }
   },
-  "winner": "pro"
+  "winner": "pro",
+  "token_usage": {
+    "total_prompt_tokens": 0,
+    "total_completion_tokens": 0,
+    "total_cost_usd": 0.0
+  }
 }
 ```
 
