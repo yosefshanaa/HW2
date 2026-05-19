@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from typing import Any
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
@@ -51,6 +52,8 @@ class DebateResult(BaseModel):
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     topic: str
     version: str = VERSION
+    config: dict[str, Any] = Field(default_factory=dict)
+    agents: dict[str, Any] = Field(default_factory=dict)
     rounds: list[Round] = Field(default_factory=list)
     final_scores: dict[str, Score]
     winner: str
