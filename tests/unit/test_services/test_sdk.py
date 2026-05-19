@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from debate_simulator.sdk.sdk import DebateSimulatorSDK
 
 
@@ -27,3 +29,14 @@ def test_sdk_start_debate_delegates_to_engine() -> None:
     result = sdk.start_debate("AI", config={"pings": 1})
 
     assert result == {"topic": "AI", "config": {"pings": 1}}
+
+
+def test_sdk_default_engine_requires_api_key(monkeypatch) -> None:
+    """SDK default engine reports missing API key clearly."""
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    sdk = DebateSimulatorSDK(topics_path=Path("data/topics.json"))
+
+    with pytest.raises(RuntimeError) as error:
+        sdk.start_debate("AI")
+
+    assert "OPENAI_API_KEY" in str(error.value)
