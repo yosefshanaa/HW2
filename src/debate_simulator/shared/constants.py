@@ -83,10 +83,31 @@ class ServiceName(str, Enum):
     DEFAULT = "default"
 
 
+class PenaltyPoints(int, Enum):
+    """Configured default penalty point values."""
+
+    EXCEED_TIME = -10
+
+
+class FallbackText(str, Enum):
+    """Fallback response texts used by infrastructure failures."""
+
+    AGENT_TIMEOUT = "Agent timed out"
+
+
+class FifoDefault(float, Enum):
+    """FIFO helper defaults."""
+
+    READ_TIMEOUT_SECONDS = 1.0
+
+
 __all__ = [
     "AgentRole",
     "ConfigFile",
+    "FallbackText",
+    "FifoDefault",
     "LogLevel",
+    "PenaltyPoints",
     "PenaltyType",
     "ScoreDimension",
     "ServiceName",
