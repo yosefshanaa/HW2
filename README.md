@@ -189,6 +189,14 @@ flowchart TD
 
 ```env
 OPENAI_API_KEY=your_api_key_here
+OPENAI_BASE_URL=
+```
+
+For Z.AI / GLM through an OpenAI-compatible endpoint, keep the key out of git and set:
+
+```env
+OPENAI_API_KEY=your_zai_key_here
+OPENAI_BASE_URL=https://api.z.ai/api/paas/v4
 ```
 
 ### `config/setup.json` (versioned)
@@ -199,6 +207,7 @@ All configurable parameters — **no hardcoded constants**:
 |-----------|---------|----------|
 | `llm.model` | `gpt-4o-mini` | config/setup.json |
 | `llm.temperature` | `0.7` | config/setup.json |
+| `llm.base_url_env` | `OPENAI_BASE_URL` | config/setup.json |
 | `debate.max_pings` | `10` | config/setup.json |
 | `debate.agent_timeout_seconds` | `60` | config/setup.json |
 | `debate.keepalive_interval_seconds` | `10` | config/setup.json |
@@ -287,6 +296,14 @@ The judge evaluates each debater on 5 weighted dimensions (0-100% each):
 | Exceeding time limit | -10% per occurrence |
 
 **Ties are valid** — the judge may declare a tie if both debaters perform equally well.
+
+### Prompt Guardrails
+
+- Son agents receive only their own stance, the topic, the round number, research notes, and the opponent's last speech.
+- For `A vs B` topics, Pro argues for `A` and Con argues for `B`; otherwise Pro supports the motion and Con opposes it.
+- The Father judge returns JSON notes per round and JSON scores at the end.
+- If a model accidentally echoes the prompt, the response is replaced with a short fallback argument and penalized where appropriate.
+- Round penalties are deducted from the final score before the winner is declared.
 
 ### Example JSON Output
 

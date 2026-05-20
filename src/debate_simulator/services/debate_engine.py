@@ -39,14 +39,15 @@ class DebateEngine:
             if research:
                 research(topic)
 
-    def run_debate_pings(self, topic: str, pings: int) -> list[Round]:
+    def run_debate_pings(self, topic: str, pings: int, max_lines: int = 8) -> list[Round]:
         """Run debate pings in Con to Pro to Judge order."""
         self.rounds = []
         for round_number in range(1, pings + 1):
             self.hooks.emit("on_round_start", ping_num=round_number, topic=topic)
+            metadata = {"max_lines": max_lines}
             con_response = self._safe_turn(
                 self.con_agent,
-                TurnContext(topic=topic, round_number=round_number),
+                TurnContext(topic=topic, round_number=round_number, metadata=metadata),
                 "con",
             )
             pro_response = self._safe_turn(
@@ -55,6 +56,7 @@ class DebateEngine:
                     topic=topic,
                     round_number=round_number,
                     opponent_last_argument=con_response.text,
+                    metadata=metadata,
                 ),
                 "pro",
             )
@@ -66,10 +68,15 @@ class DebateEngine:
                 con_argument=con_response.text,
                 pro_argument=pro_response.text,
                 judge_notes=evaluation,
-                penalties=[*con_response.penalties, *pro_response.penalties],
+                penalties=[
+                    *con_response.penalties,
+                    *pro_response.penalties,
+                    *evaluation.con_penalties,
+                    *evaluation.pro_penalties,
+                ],
             )
             self.rounds.append(round_model)
-            self.hooks.emit("on_round_end", ping_num=round_number, notes=evaluation)
+            self.hooks.emit("on_round_end", ping_num=round_number, round_model=round_model)
         return self.rounds
 
     def run_final_scoring(self) -> tuple[dict[str, Any], str]:
@@ -77,6 +84,13 @@ class DebateEngine:
         scores = self.judge_agent.evaluate_debate(
             [round_model.model_dump_json() for round_model in self.rounds]
         )
+        for round_model in self.rounds:
+            for penalty in round_model.penalties:
+                score = scores.get(penalty.agent)
+                if score is None:
+                    continue
+                score.total = max(score.total + penalty.points, 0.0)
+                score.penalties_applied.append(penalty)
         return scores, self.judge_agent.declare_winner(scores)
 
     def export_results(self, result: DebateResult) -> Path:
@@ -94,9 +108,10 @@ class DebateEngine:
         self.initialize_agents()
         debate_config = config or {}
         pings = int(debate_config.get("pings", 10))
+        max_lines = int(debate_config.get("max_lines", 8))
         self.hooks.emit("on_debate_start", topic=topic)
         self.run_research_phase(topic)
-        rounds = self.run_debate_pings(topic, pings)
+        rounds = self.run_debate_pings(topic, pings, max_lines=max_lines)
         scores, winner = self.run_final_scoring()
         result = DebateResult(
             topic=topic, rounds=rounds, final_scores=scores, winner=winner, config=debate_config

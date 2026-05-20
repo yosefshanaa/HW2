@@ -24,16 +24,35 @@ class LlmClient:
         return self.gatekeeper.execute("openai", self._complete, prompt)
 
     def _complete(self, prompt: str) -> str:
+        if hasattr(self.openai_client, "chat"):
+            text = self._complete_chat(prompt)
+        else:
+            text = self._complete_responses(prompt)
+        if not text:
+            raise ValueError("empty llm response")
+        return str(text)
+
+    def _complete_chat(self, prompt: str) -> str:
+        response = self.openai_client.chat.completions.create(
+            model=self.model,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=self.temperature,
+            max_tokens=self.max_tokens,
+        )
+        choices = getattr(response, "choices", [])
+        if not choices:
+            return ""
+        message = getattr(choices[0], "message", None)
+        return str(getattr(message, "content", "") or "")
+
+    def _complete_responses(self, prompt: str) -> str:
         response = self.openai_client.responses.create(
             model=self.model,
             input=prompt,
             temperature=self.temperature,
             max_output_tokens=self.max_tokens,
         )
-        text = getattr(response, "output_text", "")
-        if not text:
-            raise ValueError("empty llm response")
-        return str(text)
+        return str(getattr(response, "output_text", "") or "")
 
 
 __all__ = ["LlmClient"]

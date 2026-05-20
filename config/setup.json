@@ -4,7 +4,8 @@
     "model": "gpt-4o-mini",
     "temperature": 0.7,
     "max_tokens": 1024,
-    "api_key_env": "OPENAI_API_KEY"
+    "api_key_env": "OPENAI_API_KEY",
+    "base_url_env": "OPENAI_BASE_URL"
   },
   "debate": {
     "max_pings": 10,

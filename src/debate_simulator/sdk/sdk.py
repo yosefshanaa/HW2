@@ -3,8 +3,11 @@ from pathlib import Path
 from typing import Any
 
 from debate_simulator.agents import ConDebaterAgent, JudgeAgent, ProDebaterAgent
+from debate_simulator.hooks import HookRegistry
+from debate_simulator.infrastructure.search.searcher import DuckDuckGoSearcher
 from debate_simulator.services import DebateEngine
 from debate_simulator.shared import ApiGatekeeper, LlmClient, load_settings
+from debate_simulator.skills.web_search import WebSearchSkill
 
 
 class DebateSimulatorSDK:
@@ -15,11 +18,13 @@ class DebateSimulatorSDK:
         engine: Any | None = None,
         topics_path: str | Path = "data/topics.json",
         results_path: str | Path = "results",
+        hooks: HookRegistry | None = None,
     ) -> None:
         """Create the SDK with optional domain engine."""
         self.engine = engine
         self.topics_path = Path(topics_path)
         self.results_path = Path(results_path)
+        self.hooks = hooks
 
     def start_debate(self, topic: str, config: dict[str, Any] | None = None) -> Any:
         """Start a debate by delegating to the domain engine."""
@@ -43,18 +48,25 @@ class DebateSimulatorSDK:
         from openai import OpenAI
 
         gatekeeper = ApiGatekeeper(rate_limits=settings.rate_limits.rate_limits)
+        client_kwargs = {"api_key": api_key}
+        if settings.openai_base_url:
+            client_kwargs["base_url"] = settings.openai_base_url
         llm = LlmClient(
-            openai_client=OpenAI(api_key=api_key),
+            openai_client=OpenAI(**client_kwargs),
             gatekeeper=gatekeeper,
             model=settings.setup.llm.model,
             temperature=settings.setup.llm.temperature,
             max_tokens=settings.setup.llm.max_tokens,
         )
+        search_skill = WebSearchSkill(
+            DuckDuckGoSearcher(gatekeeper, settings.setup.search.max_results_per_query)
+        )
         return DebateEngine(
-            pro_agent=ProDebaterAgent("pro", llm),
-            con_agent=ConDebaterAgent("con", llm),
+            pro_agent=ProDebaterAgent("pro", llm, skills={"web_search": search_skill}),
+            con_agent=ConDebaterAgent("con", llm, skills={"web_search": search_skill}),
             judge_agent=JudgeAgent("judge", llm),
             results_path=self.results_path,
+            hooks=self.hooks,
         )
 
 

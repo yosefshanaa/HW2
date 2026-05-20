@@ -16,6 +16,7 @@ class LlmConfig(BaseModel):
     temperature: float
     max_tokens: int
     api_key_env: str
+    base_url_env: str | None = None
 
 
 class DebateConfig(BaseModel):
@@ -92,6 +93,7 @@ class Settings(BaseModel):
     setup: SetupConfig
     rate_limits: RateLimitsConfig
     openai_api_key: str | None
+    openai_base_url: str | None = None
 
     def require_openai_api_key(self) -> str:
         """Return the OpenAI API key or raise a clear startup error."""
@@ -113,6 +115,7 @@ def load_settings(
         setup=setup,
         rate_limits=limits,
         openai_api_key=os.getenv(setup.llm.api_key_env),
+        openai_base_url=os.getenv(setup.llm.base_url_env) if setup.llm.base_url_env else None,
     )
 
 
