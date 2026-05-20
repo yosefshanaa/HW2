@@ -102,9 +102,16 @@ class FifoDefault(float, Enum):
     READ_TIMEOUT_SECONDS = 1.0
 
 
+class EnvPlaceholder(str, Enum):
+    """Placeholder values that are not valid secrets."""
+
+    OPENAI_API_KEY = "your_api_key_here"
+
+
 __all__ = [
     "AgentRole",
     "ConfigFile",
+    "EnvPlaceholder",
     "FallbackText",
     "FifoDefault",
     "LogLevel",

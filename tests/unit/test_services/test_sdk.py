@@ -33,7 +33,7 @@ def test_sdk_start_debate_delegates_to_engine() -> None:
 
 def test_sdk_default_engine_requires_api_key(monkeypatch) -> None:
     """SDK default engine reports missing API key clearly."""
-    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.setenv("OPENAI_API_KEY", "your_api_key_here")
     sdk = DebateSimulatorSDK(topics_path=Path("data/topics.json"))
 
     with pytest.raises(RuntimeError) as error:

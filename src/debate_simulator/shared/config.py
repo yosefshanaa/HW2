@@ -6,7 +6,7 @@ from typing import Any
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 
-from debate_simulator.shared.constants import ConfigFile
+from debate_simulator.shared.constants import ConfigFile, EnvPlaceholder
 
 
 class LlmConfig(BaseModel):
@@ -95,7 +95,7 @@ class Settings(BaseModel):
 
     def require_openai_api_key(self) -> str:
         """Return the OpenAI API key or raise a clear startup error."""
-        if not self.openai_api_key:
+        if not self.openai_api_key or self.openai_api_key == EnvPlaceholder.OPENAI_API_KEY.value:
             raise RuntimeError("OPENAI_API_KEY is required")
         return self.openai_api_key
 

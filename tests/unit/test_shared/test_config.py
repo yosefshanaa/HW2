@@ -26,9 +26,20 @@ def test_load_settings_rejects_missing_config() -> None:
         load_settings(setup_path=Path("missing.json"))
 
 
-def test_settings_require_openai_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_settings_require_openai_api_key(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     """Missing OpenAI API key raises a clear startup error."""
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    settings = load_settings(env_path=tmp_path / "missing.env")
+
+    with pytest.raises(RuntimeError):
+        settings.require_openai_api_key()
+
+
+def test_settings_reject_placeholder_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The .env placeholder is not treated as a real API key."""
+    monkeypatch.setenv("OPENAI_API_KEY", "your_api_key_here")
     settings = load_settings()
 
     with pytest.raises(RuntimeError):
