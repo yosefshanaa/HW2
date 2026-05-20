@@ -8,11 +8,12 @@
     "base_url_env": "OPENAI_BASE_URL"
   },
   "debate": {
-    "max_pings": 10,
+    "max_pings": 6,
     "agent_timeout_seconds": 60,
     "keepalive_interval_seconds": 10,
-    "max_lines_per_response": 50,
-    "max_tokens_per_response": 1024,
+    "max_lines_per_response": 2,
+    "max_words_per_response": 60,
+    "max_tokens_per_response": 512,
     "research_timeout_seconds": 120
   },
   "search": {
@@ -38,7 +39,8 @@
     "ignore_rebuttal": 10,
     "stance_contradiction": 15,
     "exceed_lines": 5,
-    "exceed_time": 10
+    "exceed_time": 10,
+    "repetition": 10
   },
   "scoring": {
     "weights": {

@@ -11,6 +11,7 @@ from debate_simulator.skills.base_skill import SkillResult
 _PROMPTS_DIR = Path(__file__).parent / "prompts"
 _JUDGE_PROMPT = (_PROMPTS_DIR / "judge_system.md").read_text(encoding="utf-8")
 _DIMENSIONS = ["argument_strength", "rebuttal_effectiveness", "evidence_research", "rhetorical_quality", "compliance"]
+_JUDGE_REPETITION_THRESHOLD = 0.7
 
 
 class JudgeAgent(BaseAgent):
@@ -19,22 +20,63 @@ class JudgeAgent(BaseAgent):
     def __init__(self, name: str, llm_client: Any, skills: dict[str, Any] | None = None) -> None:
         """Create a judge agent."""
         super().__init__(name=name, role=AgentRole.JUDGE, llm_client=llm_client, skills=skills)
+        self._pro_history: list[str] = []
+        self._con_history: list[str] = []
 
     def observe_round(
-        self, round_number: int, pro_argument: str, con_argument: str
+        self,
+        round_number: int,
+        pro_argument: str,
+        con_argument: str,
+        debate_history: list[str] | None = None,
     ) -> RoundEvaluation:
         """Observe one round and return private judge notes."""
         try:
-            data = self._json_from_llm(self._round_prompt(round_number, pro_argument, con_argument))
+            data = self._json_from_llm(
+                self._round_prompt(round_number, pro_argument, con_argument, debate_history)
+            )
         except Exception:
             data = self._fallback_round(pro_argument, con_argument)
+        self._pro_history.append(pro_argument)
+        self._con_history.append(con_argument)
+        penalties = list(data.get("con_penalties", [])) + list(data.get("pro_penalties", []))
+        penalties += self._auto_repetition_penalties(pro_argument, con_argument)
+        con_pen = [p for p in penalties if isinstance(p, str)]
+        pro_pen = []
+        con_penalties = self._penalties("con", con_pen)
+        pro_penalties = self._penalties("pro", pro_pen)
         return RoundEvaluation(
             pro_notes=str(data.get("pro_notes", "")),
             con_notes=str(data.get("con_notes", "")),
-            pro_penalties=self._penalties("pro", data.get("pro_penalties", [])),
-            con_penalties=self._penalties("con", data.get("con_penalties", [])),
+            pro_penalties=pro_penalties,
+            con_penalties=con_penalties,
             judge_message=None,
         )
+
+    def _auto_repetition_penalties(self, pro_argument: str, con_argument: str) -> list[str]:
+        """Auto-detect repetition when LLM judge misses it."""
+        flagged: list[str] = []
+        if self._is_repetitive(pro_argument, self._pro_history[:-1]):
+            flagged.append("repetition")
+        if self._is_repetitive(con_argument, self._con_history[:-1]):
+            flagged.append("repetition")
+        return flagged
+
+    def _is_repetitive(self, text: str, history: list[str]) -> bool:
+        """Check if text has high word overlap with any prior argument."""
+        if not history:
+            return False
+        current_words = set(text.lower().split())
+        if len(current_words) < 5:
+            return False
+        for prev in history:
+            prev_words = set(prev.lower().split())
+            if not prev_words:
+                continue
+            overlap = len(current_words & prev_words) / len(current_words | prev_words)
+            if overlap > _JUDGE_REPETITION_THRESHOLD:
+                return True
+        return False
 
     def evaluate_debate(self, transcript: list[str]) -> dict[str, Score]:
         """Evaluate a transcript and return final scores."""
@@ -67,9 +109,19 @@ class JudgeAgent(BaseAgent):
     def _validate_response(self, response: str) -> AgentResponse:
         return AgentResponse.from_text(response, time_seconds=0)
 
-    def _round_prompt(self, round_number: int, pro_argument: str, con_argument: str) -> str:
+    def _round_prompt(
+        self,
+        round_number: int,
+        pro_argument: str,
+        con_argument: str,
+        debate_history: list[str] | None = None,
+    ) -> str:
+        history_block = ""
+        if debate_history:
+            history_block = "\nDebate history (prior rounds):\n" + "\n".join(debate_history[-4:]) + "\n"
         return (
-            f"{_JUDGE_PROMPT}\n\nEvaluate round {round_number}.\n"
+            f"{_JUDGE_PROMPT}\n\n{history_block}"
+            f"Evaluate round {round_number}.\n"
             f"Con speech:\n{con_argument}\n\nPro speech:\n{pro_argument}\n\n"
             'Return JSON only: {"con_notes":"...","pro_notes":"...",'
             '"con_penalties":[],"pro_penalties":[]}.'
@@ -141,7 +193,7 @@ class JudgeAgent(BaseAgent):
             except ValueError:
                 continue
             points = -15 if penalty_type == PenaltyType.STANCE_CONTRADICTION else -5
-            if penalty_type in {PenaltyType.IGNORE_REBUTTAL, PenaltyType.EXCEED_TIME}:
+            if penalty_type in {PenaltyType.IGNORE_REBUTTAL, PenaltyType.EXCEED_TIME, PenaltyType.REPETITION}:
                 points = -10
             penalties.append(Penalty(type=penalty_type, points=points, reason=str(name), agent=agent))
         return penalties

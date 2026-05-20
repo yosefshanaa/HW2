@@ -22,6 +22,8 @@ class TurnContext(BaseModel):
     stance: Stance | None = None
     opponent_last_argument: str = ""
     research: list[str] = Field(default_factory=list)
+    debate_history: list[str] = Field(default_factory=list)
+    judge_feedback: str = ""
     memory: list[Message] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)
 

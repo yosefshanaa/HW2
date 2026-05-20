@@ -39,29 +39,46 @@ class DebateEngine:
             if research:
                 research(topic)
 
-    def run_debate_pings(self, topic: str, pings: int, max_lines: int = 8) -> list[Round]:
+    def run_debate_pings(self, topic: str, pings: int, max_lines: int = 2, max_words: int = 60) -> list[Round]:
         """Run debate pings in Con to Pro to Judge order."""
         self.rounds = []
+        debate_history: list[str] = []
         for round_number in range(1, pings + 1):
             self.hooks.emit("on_round_start", ping_num=round_number, topic=topic)
-            metadata = {"max_lines": max_lines}
-            con_response = self._safe_turn(
-                self.con_agent,
-                TurnContext(topic=topic, round_number=round_number, metadata=metadata),
-                "con",
+            metadata = {"max_lines": max_lines, "max_words": max_words, "total_rounds": pings}
+
+            con_context = TurnContext(
+                topic=topic,
+                round_number=round_number,
+                metadata=metadata,
+                debate_history=list(debate_history),
+                judge_feedback=self._last_feedback("con"),
             )
-            pro_response = self._safe_turn(
-                self.pro_agent,
-                TurnContext(
-                    topic=topic,
-                    round_number=round_number,
-                    opponent_last_argument=con_response.text,
-                    metadata=metadata,
-                ),
-                "pro",
+            if debate_history:
+                con_context.opponent_last_argument = self.rounds[-1].pro_argument
+
+            con_response = self._safe_turn(self.con_agent, con_context, "con")
+
+            pro_context = TurnContext(
+                topic=topic,
+                round_number=round_number,
+                opponent_last_argument=con_response.text,
+                metadata=metadata,
+                debate_history=list(debate_history),
+                judge_feedback=self._last_feedback("pro"),
             )
+            pro_response = self._safe_turn(self.pro_agent, pro_context, "pro")
+
             evaluation = self.judge_agent.observe_round(
-                round_number, pro_response.text, con_response.text
+                round_number, pro_response.text, con_response.text,
+                debate_history=list(debate_history),
+            )
+            debate_history.append(
+                f"Round {round_number}:\n"
+                f"Con: {con_response.text}\n"
+                f"Pro: {pro_response.text}\n"
+                f"Judge->Con: {evaluation.con_notes}\n"
+                f"Judge->Pro: {evaluation.pro_notes}"
             )
             round_model = Round(
                 round_number=round_number,
@@ -78,6 +95,13 @@ class DebateEngine:
             self.rounds.append(round_model)
             self.hooks.emit("on_round_end", ping_num=round_number, round_model=round_model)
         return self.rounds
+
+    def _last_feedback(self, agent: str) -> str:
+        if not self.rounds:
+            return ""
+        last_eval = self.rounds[-1].judge_notes
+        notes = last_eval.con_notes if agent == "con" else last_eval.pro_notes
+        return f"The judge's feedback on your last speech: {notes}" if notes else ""
 
     def run_final_scoring(self) -> tuple[dict[str, Any], str]:
         """Run final judge scoring."""
@@ -107,11 +131,12 @@ class DebateEngine:
         """Run a complete debate and export the result."""
         self.initialize_agents()
         debate_config = config or {}
-        pings = int(debate_config.get("pings", 10))
-        max_lines = int(debate_config.get("max_lines", 8))
+        pings = int(debate_config.get("pings", 6))
+        max_lines = int(debate_config.get("max_lines", 2))
+        max_words = int(debate_config.get("max_words", 60))
         self.hooks.emit("on_debate_start", topic=topic)
         self.run_research_phase(topic)
-        rounds = self.run_debate_pings(topic, pings, max_lines=max_lines)
+        rounds = self.run_debate_pings(topic, pings, max_lines=max_lines, max_words=max_words)
         scores, winner = self.run_final_scoring()
         result = DebateResult(
             topic=topic, rounds=rounds, final_scores=scores, winner=winner, config=debate_config

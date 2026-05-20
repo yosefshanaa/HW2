@@ -33,7 +33,9 @@ The judge is **not a domain expert** — he evaluates based on **argumentation q
   - Disrespectful language or ad hominem attacks
   - Failing to address the opponent's previous point (ignoring rebuttal)
   - Contradicting own stance (e.g., Pro agent making anti arguments)
-  - Exceeding time or line limits
+  - Exceeding time, line, or word limits
+  - Repeating arguments from earlier rounds
+  - Failing to advance the debate with new content
 - After all rounds: assigns a **score (%)** to each debater and declares a winner (**or tie** — ties are valid)
 - Outputs full scoring breakdown as JSON
 - **Communication is one-directional**: Sons → Father (Father does not communicate back to sons during debate)
@@ -41,8 +43,11 @@ The judge is **not a domain expert** — he evaluates based on **argumentation q
 #### 3.1.2 Debater Agents (Sons)
 - Each debater is **randomly assigned** a stance: **Pro** or **Con** (they do not choose)
 - Each debater is given the topic and performs **internet research** before the debate begins
+- Each debater **must maintain their assigned stance** — Pro argues FOR the resolution, Con argues AGAINST it. Stance contradiction results in a -15 penalty
 - During each round, the debater **must reply to the opponent's previous argument** — not ignore it
-- Each debater has a configurable **line limit** per response and **time limit** per turn
+- Each debater must **introduce at least one new argument or angle per round** — repeating prior rounds results in a -10 penalty
+- Each debater has a configurable **line limit** (default 2) and **word limit** (default 60) per response
+- Each debater has a configurable **time limit** per turn
 - If a debater's response contradicts their assigned stance, the judge penalizes them
 - Debaters must maintain a **respectful tone** — politically correct, no racism, no ad hominem
 - Each debater has a **Skill** it cannot refuse to use (its core competency)
@@ -75,12 +80,12 @@ The judge is **not a domain expert** — he evaluates based on **argumentation q
 2. System initializes 3 agents (Judge + 2 Debaters) as separate processes
 3. Judge fetches debate judging criteria from internet (search)
 4. Both debaters perform internet research on the topic in parallel
-5. Debate begins — 10 Pings (rounds), each side speaks once per ping:
+5. Debate begins — 6 Pings (rounds), each side speaks once per ping:
    Ping N:
       a. Con Agent presents argument/rebuttal — timed (timeout enforced)
       b. Pro Agent responds to Con's argument — timed (timeout enforced)
       c. Judge observes and takes notes (does NOT intervene)
-6. After 10 pings:
+6. After 6 pings:
    a. Judge reviews full debate transcript (JSON)
    b. Judge scores each debater on multiple criteria (see §3.6)
    c. Judge declares winner OR TIE
@@ -93,11 +98,12 @@ The judge is **not a domain expert** — he evaluates based on **argumentation q
 
 | Parameter | Default | Configurable | Description |
 |-----------|---------|-------------|-------------|
-| `max_pings` | 10 | Yes | Number of debate pings (rounds) |
+| `max_pings` | 6 | Yes | Number of debate pings (rounds) |
 | `agent_timeout` | 60s | Yes | Max time per agent turn before process kill |
 | `keepalive_interval` | 10s | Yes | Watchdog keep-alive ping interval |
-| `max_lines_per_response` | 50 | Yes | Max lines per agent response |
-| `max_tokens_per_response` | 1024 | Yes | Max tokens per LLM call |
+| `max_lines_per_response` | 2 | Yes | Max lines per agent response |
+| `max_words_per_response` | 60 | Yes | Max words per agent response |
+| `max_tokens_per_response` | 512 | Yes | Max tokens per LLM call |
 | `research_timeout` | 120s | Yes | Max time for internet research phase |
 
 - Every agent has a **timeout** — if exceeded, the agent is killed
@@ -134,8 +140,10 @@ The judge evaluates each debater on the following dimensions, each scored 0-100%
 - Disrespectful language: -5% per occurrence
 - Ignoring opponent's point: -10% per occurrence
 - Contradicting own stance: -15% per occurrence
-- Exceeding line limit: -5% per occurrence
+- Exceeding line or word limit: -5% per occurrence
 - Exceeding time limit (auto-kill): -10% per occurrence
+- Repeating arguments from earlier rounds: -10% per occurrence
+- Failing to advance the debate with new content: -10% per occurrence
 
 **Ties are valid** — not every debate needs a clear winner. The judge may declare a tie.
 

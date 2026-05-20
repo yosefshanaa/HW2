@@ -26,6 +26,7 @@ class DebateConfig(BaseModel):
     agent_timeout_seconds: int
     keepalive_interval_seconds: int
     max_lines_per_response: int
+    max_words_per_response: int = 60
     max_tokens_per_response: int
     research_timeout_seconds: int
 

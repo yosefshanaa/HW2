@@ -278,7 +278,6 @@ Every task in this TODO is "done" when **all** of the following are true:
 ---
 
 ## Phase 14: Final Review & Submission
-
 | # | Task | Priority | Status | Depends On |
 |---|------|----------|--------|-----------|
 | 14.1 | Verify `.env.example` has placeholder only, no real keys | P0 | [x] | 1.5 |
@@ -300,16 +299,44 @@ Every task in this TODO is "done" when **all** of the following are true:
 
 ---
 
+## Phase 15: Debate Quality Overhaul
+
+Issues identified from manual test: agents repeat arguments, Pro argues Con's position, arguments too long, judge doesn't penalize repetition, judge fallback triggers on round 3.
+
+| # | Task | Priority | Status | Depends On |
+|---|------|----------|--------|-----------|
+| 15.1 | Add `REPETITION` penalty type to `PenaltyType` enum in constants.py | P0 | [x] | — |
+| 15.2 | Add `REPETITION = -10` to `PenaltyPoints` enum in constants.py | P0 | [x] | 15.1 |
+| 15.3 | Add `repetition: 10` penalty to `config/setup.json` penalties section | P0 | [x] | 15.1 |
+| 15.4 | Add `max_words_per_response: 60` to `DebateConfig` in `shared/config.py` | P0 | [x] | — |
+| 15.5 | Reduce `max_pings` from 10 to 6 in `config/setup.json` | P0 | [x] | — |
+| 15.6 | Reduce `max_lines_per_response` from 3 to 2 in `config/setup.json` | P0 | [x] | — |
+| 15.7 | Reduce `max_tokens_per_response` from 1024 to 512 in `config/setup.json` | P0 | [x] | — |
+| 15.8 | Rewrite `debater_system.md` — explicit stance rules with examples, no-repetition rule, word/line caps, new-argument-per-round rule, previous-arguments block | P0 | [x] | 15.1 |
+| 15.9 | Rewrite `judge_system.md` — add stance verification section, repetition/failure-to-advance penalties, instruction to compare against history, stricter feedback | P0 | [x] | 15.1 |
+| 15.10 | Update `debater_agent.py` — add `previous_arguments` list, inject into prompt, add `_check_repetition()` with 60% Jaccard overlap, add word-count penalty | P0 | [x] | 15.1 |
+| 15.11 | Update `judge_agent.py` — accept `debate_history` in `observe_round()`, pass last 4 rounds to judge prompt, add `_auto_repetition_penalties()` with 70% Jaccard, handle `REPETITION` in `_penalties()` | P0 | [x] | 15.1 |
+| 15.12 | Update `debate_engine.py` — pass `debate_history` to judge, add `max_words` param, update defaults | P0 | [x] | 15.11 |
+| 15.13 | Update `judge_service.py` — pass through `debate_history` to agent | P1 | [x] | 15.11 |
+| 15.14 | Update `docs/TODO.md` with Phase 15 tasks | P0 | [x] | — |
+| 15.15 | Update `docs/PRD.md` — add repetition penalty, word limit, stance enforcement | P1 | [x] | 15.12 |
+| 15.16 | Update `docs/PLAN.md` — update config defaults, add ADR-011 | P1 | [x] | 15.12 |
+| 15.17 | Update `docs/PRD_judge_evaluation.md` — add repetition detection and stance verification | P1 | [x] | 15.11 |
+| 15.18 | Run `uv run pytest` — all existing tests pass with new signatures | P0 | [~] | 15.1–15.13 |
+| 15.19 | Run `uv run ruff check src/` — 0 errors | P0 | [~] | 15.1–15.13 |
+
+---
+
 ## Summary Statistics
 
 | Category | Count |
 |----------|-------|
-| Total tasks | **121** |
-| P0 (critical) | **75** |
-| P1 (high) | **38** |
+| Total tasks | **140** |
+| P0 (critical) | **89** |
+| P1 (high) | **42** |
 | P2 (medium) | **9** |
 | P3 (low) | **0** |
-| Phases | **14** |
+| Phases | **15** |
 
 ### Professor's Grading Checklist (from submission guidelines V3)
 

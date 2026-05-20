@@ -31,6 +31,7 @@ class PenaltyType(str, Enum):
     STANCE_CONTRADICTION = "stance_contradiction"
     EXCEED_LINES = "exceed_lines"
     EXCEED_TIME = "exceed_time"
+    REPETITION = "repetition"
 
 
 class SessionState(str, Enum):
@@ -87,6 +88,7 @@ class PenaltyPoints(int, Enum):
     """Configured default penalty point values."""
 
     EXCEED_TIME = -10
+    REPETITION = -10
 
 
 class FallbackText(str, Enum):

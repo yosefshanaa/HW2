@@ -476,6 +476,19 @@ ConAgent      ProAgent      JudgeAgent    ProcessMgr    FIFO
 - **Trade-offs**: +extensible without modifying core code; -complexity, potential hook ordering issues
 - **Alternatives considered**: Observer pattern (heavier), inheritance-only (less flexible)
 
+### ADR-011: Debate Quality Enforcement via Repetition Detection & Strict Stance Control
+- **Decision**: Add automated repetition detection (Jaccard word overlap) and explicit stance enforcement to both debater prompts and judge evaluation
+- **Context**: Manual testing revealed agents repeating the same arguments for 10 rounds, Pro arguing Con's position, and judge failing to penalize either
+- **Implementation**:
+  - Debaters track `previous_arguments` list, injected into prompt as "DO NOT repeat" block
+  - Debater `_check_repetition()` auto-penalizes at 60% Jaccard overlap threshold
+  - Judge receives debate history (last 4 rounds) for cross-round comparison
+  - Judge `_auto_repetition_penalties()` auto-penalizes at 70% Jaccard overlap when LLM misses it
+  - New `REPETITION` penalty type (-10 points) added to constants and config
+  - Prompts rewritten with explicit stance rules, concrete examples, and novelty requirements
+- **Trade-offs**: +forces argument diversity, +prevents stance drift; -may over-penalize similar legitimate arguments, -adds computational overhead per turn
+- **Alternatives considered**: LLM-only repetition detection (unreliable), n-gram overlap (more complex), no enforcement (status quo)
+
 ---
 
 ## 4. Detailed Module Design
@@ -685,11 +698,12 @@ Implementation:
     "api_key_env": "OPENAI_API_KEY"
   },
   "debate": {
-    "max_pings": 10,
+    "max_pings": 6,
     "agent_timeout_seconds": 60,
     "keepalive_interval_seconds": 10,
-    "max_lines_per_response": 50,
-    "max_tokens_per_response": 1024,
+    "max_lines_per_response": 2,
+    "max_words_per_response": 60,
+    "max_tokens_per_response": 512,
     "research_timeout_seconds": 120
   },
   "search": {
@@ -715,7 +729,8 @@ Implementation:
     "ignore_rebuttal": 10,
     "stance_contradiction": 15,
     "exceed_lines": 5,
-    "exceed_time": 10
+    "exceed_time": 10,
+    "repetition": 10
   },
   "scoring": {
     "weights": {

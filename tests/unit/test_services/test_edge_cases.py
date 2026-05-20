@@ -58,7 +58,7 @@ class Judge:
     """Judge test double."""
 
     def observe_round(
-        self, round_number: int, pro_argument: str, con_argument: str
+        self, round_number: int, pro_argument: str, con_argument: str, debate_history=None,
     ) -> RoundEvaluation:
         """Return empty notes."""
         return RoundEvaluation()
