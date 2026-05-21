@@ -85,11 +85,8 @@ def _print_scores(console: Console, scores: dict[str, Any]) -> None:
     for side in ["con", "pro"]:
         score = scores.get(side)
         if score is not None:
-            lines.append(
-                f"[{'red' if side == 'con' else 'green'}]"
-                f"{side.title()}: {getattr(score, 'total', 0):.1f}%"
-                f"[/{side}]"
-            )
+            color = "red" if side == "con" else "green"
+            lines.append(f"[{color}]{side.title()}: {getattr(score, 'total', 0):.1f}%[/{color}]")
     console.print(Panel("\n".join(lines), title="Scores", border_style="cyan"))
 
 
