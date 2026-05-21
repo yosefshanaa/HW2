@@ -1,6 +1,5 @@
 from debate_simulator.agents.debater_agent import ProDebaterAgent
 from debate_simulator.agents.judge_agent import JudgeAgent
-from debate_simulator.models.agent import TurnContext
 from debate_simulator.models.debate import RoundEvaluation, Score
 from debate_simulator.services.debater_service import DebaterService
 from debate_simulator.services.judge_service import JudgeService
@@ -22,6 +21,16 @@ def test_judge_observes_without_replying_to_debaters() -> None:
     evaluation = judge.observe_round(round_number=1, pro_argument="pro", con_argument="con")
 
     assert isinstance(evaluation, RoundEvaluation) and evaluation.judge_message is None
+
+
+def test_judge_pro_penalties_not_discarded() -> None:
+    """Pro penalties are populated, not silently replaced with empty list."""
+    judge = JudgeAgent(name="father", llm_client=FakeLlm())
+
+    evaluation = judge.observe_round(round_number=1, pro_argument="pro", con_argument="con")
+
+    assert isinstance(evaluation, RoundEvaluation)
+    assert hasattr(evaluation, "pro_penalties")
 
 
 def test_judge_declares_tie_for_equal_scores() -> None:
@@ -47,6 +56,8 @@ def test_judge_service_delegates_observe_and_score() -> None:
 
 def test_debater_service_delegates_research_and_turn() -> None:
     """DebaterService passes through to the underlying debater agent."""
+    from debate_simulator.models.agent import TurnContext
+
     agent = ProDebaterAgent(name="son1", llm_client=FakeLlm())
     service = DebaterService(debater_agent=agent)
 

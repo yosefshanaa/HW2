@@ -99,7 +99,7 @@ uv run python main.py --topic 1 --pings 5
 
 ```
 usage: main.py [-h] [--topic TOPIC] [--custom-topic TEXT] [--pings PINGS]
-               [--config CONFIG] [--list-topics] [--log-level LEVEL]
+               [--config CONFIG] [--list-topics] [--verbose]
 
 Options:
   -h, --help            Show help message and exit
@@ -108,7 +108,7 @@ Options:
   --pings PINGS         Number of debate pings (default: 10)
   --config CONFIG       Path to config file (default: config/setup.json)
   --list-topics        List all available debate topics
-  --log-level LEVEL     Logging level: DEBUG, INFO, WARNING, ERROR, CRITICAL (default: INFO)
+  --verbose             Enable verbose logging
 ```
 
 ### Examples
@@ -117,14 +117,14 @@ Options:
 # List all topics
 uv run python main.py --list-topics
 
-# Specific topic with default 10 pings
+# Specific topic with default 6 pings
 uv run python main.py --topic 3
 
 # Custom topic with 5 pings
 uv run python main.py --custom-topic "Nuclear energy is the solution to climate change" --pings 5
 
-# Debug mode with verbose logging
-uv run python main.py --topic 1 --log-level DEBUG
+# Verbose logging
+uv run python main.py --topic 1 --verbose
 ```
 
 ---
@@ -158,7 +158,7 @@ CLI (main.py)
 - Each agent runs as a **separate process**
 - Agents communicate via **FIFO (named pipes)** using **JSON** protocol
 - Communication is **one-directional**: Sons → Father (judge only listens, never intervenes)
-- **Con speaks first** in each ping, then Pro responds
+- **Pro speaks first** in each ping, then Con responds
 
 ### C4 Model
 
@@ -275,15 +275,13 @@ Custom topics are supported via `--custom-topic` flag.
 
 ## Scoring System
 
-The judge evaluates each debater on 5 weighted dimensions (0-100% each):
+The judge evaluates each debater on 3 weighted dimensions (0-100% each):
 
 | Criterion | Weight | Description |
 |-----------|--------|-------------|
-| **Argument Strength** | 25% | Logical coherence, evidence quality, persuasiveness |
-| **Rebuttal Effectiveness** | 25% | How well the debater addressed the opponent's point |
-| **Evidence & Research** | 20% | Use of factual data, statistics, credible sources |
-| **Rhetorical Quality** | 15% | Clarity, structure, persuasion technique |
-| **Compliance** | 15% | Respect, relevance, no contradiction with own stance |
+| **Content** | 40% | Logical coherence, evidence quality, persuasiveness |
+| **Style** | 30% | Clarity, structure, rhetorical technique |
+| **Strategy** | 30% | Rebuttal effectiveness, stance consistency |
 
 **Penalties** (deducted from final score):
 
@@ -292,8 +290,10 @@ The judge evaluates each debater on 5 weighted dimensions (0-100% each):
 | Disrespectful language | -5% per occurrence |
 | Ignoring opponent's point | -10% per occurrence |
 | Contradicting own stance | -15% per occurrence |
+| Exceeding word limit | -5% per occurrence |
 | Exceeding line limit | -5% per occurrence |
 | Exceeding time limit | -10% per occurrence |
+| Repetition | -10% per occurrence |
 
 **Ties are valid** — the judge may declare a tie if both debaters perform equally well.
 

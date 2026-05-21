@@ -11,9 +11,11 @@ from debate_simulator.shared.constants import ServiceName, TimeWindowSeconds
 ResultT = TypeVar("ResultT")
 Logger = Callable[[str, str, str], Any]
 
+_TRANSIENT_EXCEPTIONS = (ConnectionError, TimeoutError, OSError)
+
 
 class QueueFullError(RuntimeError):
-    """Raised when the gatekeeper cannot accept more queued requests."""
+    pass
 
 
 class ApiGatekeeper:
@@ -82,11 +84,14 @@ class ApiGatekeeper:
         for attempts in range(limit.max_retries + 1):
             try:
                 return api_call(*args, **kwargs)
-            except Exception:
+            except _TRANSIENT_EXCEPTIONS:
                 if attempts >= limit.max_retries:
                     self._log("ERROR", "api call failed")
                     raise
                 self.sleeper(limit.retry_after_seconds * (2**attempts))
+            except Exception:
+                self._log("ERROR", "api call failed with non-transient error")
+                raise
         raise RuntimeError("unreachable")
 
     def _finish(self, service: str, token: object | None) -> None:

@@ -39,6 +39,7 @@
     "ignore_rebuttal": 10,
     "stance_contradiction": 15,
     "exceed_lines": 5,
+    "exceed_words": 5,
     "exceed_time": 10,
     "repetition": 10
   },

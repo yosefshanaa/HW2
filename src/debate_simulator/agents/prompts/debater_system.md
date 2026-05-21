@@ -35,7 +35,7 @@ Research notes you MAY use as evidence (choose different sources each round):
 - Be respectful; no insults or ad hominem.
 
 ## Argument Rules (MANDATORY — violations cause -15 penalty)
-1. REBUT: Quote one specific claim from the opponent's last argument, then explain why it is wrong.
+1. REBUT (if opponent has spoken): Quote one specific claim from the opponent's last argument, then explain why it is wrong. In Round 1 when the opponent has NOT spoken yet, skip this and open with your strongest case instead.
 2. NEW ARGUMENT EVERY ROUND (critical): You MUST introduce a completely NEW angle, statistic, or piece of evidence that has NEVER appeared in any of your previous arguments. Read "{your_previous_arguments}" carefully — if a point was already made, you CANNOT say it again. Penalized heavily.
 3. NO REPEATED CITATIONS: Do NOT cite the same source, article, or statistic in more than one round. Use a different source each round.
 4. EVIDENCE: Use at least one fact, statistic, or source from the research notes (if available).

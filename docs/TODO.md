@@ -210,7 +210,7 @@ Every task in this TODO is "done" when **all** of the following are true:
 | 10.1 | Integration test (RED): full debate with mocked LLM (verify flow, JSON output) | P0 | [x] | 8.7 |
 | 10.2 | Integration test (RED): logging pipeline end-to-end | P1 | [x] | 2.11 |
 | 10.3 | Integration test (RED): SDK entry point — verify CLI → SDK → Services chain | P0 | [x] | 8.7 |
-| 10.4 | E2E test: real debate with real API — verify non-determinism across 3+ runs | P0 | [~] | 8.7 |
+| 10.4 | E2E test: real debate with real API — verify non-determinism across 3+ runs | P0 | [ ] | 8.7 |
 | 10.5 | Test: verify penalties correctly applied and reflected in final scores | P1 | [x] | 10.1 |
 | 10.6 | Test: verify timeout kills agent and records penalty | P1 | [x] | 7.10 |
 | 10.7 | Test: verify tie detection (both agents equal scoring) | P1 | [x] | 10.1 |
@@ -259,7 +259,7 @@ Every task in this TODO is "done" when **all** of the following are true:
 | 12.16 | Create results analysis notebook — per-agent score tables, cross-run comparisons, statistics | P1 | [x] | 10.4 |
 | 12.17 | Generate visualizations — bar charts (score comparison), line charts (cross-run variance), heatmaps (criteria correlation) | P1 | [x] | 12.16 |
 | 12.18 | Add License & Credits section to README | P1 | [x] | 12.10 |
-| 12.19 | Include assignment PDF from Moodle + student photos in submission package | P1 | [~] | 14.16 |
+| 12.19 | Include assignment PDF from Moodle + student photos in submission package | P1 | [ ] | 14.16 |
 
 ---
 
@@ -287,13 +287,13 @@ Every task in this TODO is "done" when **all** of the following are true:
 | 14.7 | Verify version is **1.00** in all versioned files | P0 | [x] | 1.4 |
 | 14.8 | Verify logging: 20 files created, 500 lines each, FIFO working | P1 | [x] | 2.11 |
 | 14.9 | Verify JSON output is valid and complete | P0 | [x] | 8.5 |
-| 14.10 | Verify non-determinism: same debate 5 times, results vary | P0 | [~] | 10.4 |
+| 14.10 | Verify non-determinism: same debate 5 times, results vary | P0 | [ ] | 10.4 |
 | 14.11 | Verify all penalties work (respect, rebuttal, stance, timeout, lines) | P1 | [x] | 10.5 |
 | 14.12 | Final code cleanup — remove debug prints, unused imports, dead code | P1 | [x] | All |
 | 14.13 | Verify README is comprehensive with screenshots, diagrams, examples | P0 | [x] | 12.10 |
 | 14.14 | Verify all `docs/` PRDs are complete | P0 | [x] | 12.2–12.7 |
 | 14.15 | Verify Prompt Engineering Log is documented | P0 | [x] | 12.8 |
-| 14.16 | Package for submission | P0 | [~] | All |
+| 14.16 | Package for submission | P0 | [ ] | All |
 
 ---
 

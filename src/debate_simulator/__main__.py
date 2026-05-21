@@ -1,9 +1,10 @@
-from debate_simulator.shared.version import VERSION
-
-
 def main() -> None:
-    """Run the package module entry point."""
-    print(f"debate-simulator {VERSION}")
+    """Run the debate simulator CLI."""
+    import sys
+
+    from main import main as _cli
+
+    _cli(sys.argv[1:])
 
 
 if __name__ == "__main__":

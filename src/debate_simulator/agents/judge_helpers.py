@@ -2,29 +2,30 @@
 
 from __future__ import annotations
 
-import json
 from typing import Any
 
 from debate_simulator.models.debate import Penalty, Score
-from debate_simulator.shared.constants import PenaltyType
+from debate_simulator.shared.constants import (
+    PenaltyPoints,
+    PenaltyType,
+    RepetitionThreshold,
+    ScoreDefault,
+)
 
 _DIMENSIONS = ["content", "style", "strategy"]
-_JUDGE_REPETITION_THRESHOLD = 0.55
 
 
 def detect_repetition(
     pro_arg: str, con_arg: str, pro_hist: list[str], con_hist: list[str]
-) -> list[str]:
-    """Auto-detect repetition when the LLM judge misses it."""
-    flagged: list[str] = []
-    if _is_repetitive(pro_arg, pro_hist[:-1]):
-        flagged.append("repetition")
-    if _is_repetitive(con_arg, con_hist[:-1]):
-        flagged.append("repetition")
-    return flagged
+) -> tuple[list[str], list[str]]:
+    """Auto-detect repetition when the LLM judge misses it. Returns (pro_flags, con_flags)."""
+    threshold = RepetitionThreshold.JUDGE_BIGRAM_OVERLAP.value
+    pro_flagged = ["repetition"] if _is_repetitive(pro_arg, pro_hist[:-1], threshold) else []
+    con_flagged = ["repetition"] if _is_repetitive(con_arg, con_hist[:-1], threshold) else []
+    return pro_flagged, con_flagged
 
 
-def _is_repetitive(text: str, history: list[str]) -> bool:
+def _is_repetitive(text: str, history: list[str], threshold: float) -> bool:
     """Check if *text* reuses phrases from prior arguments via bigram overlap."""
     if not history:
         return False
@@ -38,7 +39,7 @@ def _is_repetitive(text: str, history: list[str]) -> bool:
             continue
         prev_bigrams = set(zip(prev_words, prev_words[1:], strict=False))
         union = len(current_bigrams | prev_bigrams)
-        if union and len(current_bigrams & prev_bigrams) / union > _JUDGE_REPETITION_THRESHOLD:
+        if union and len(current_bigrams & prev_bigrams) / union > threshold:
             return True
     return False
 
@@ -60,11 +61,12 @@ def analytical_note(agent: str, argument: str, opponent: str) -> str:
 
 def fallback_round_data(pro_argument: str, con_argument: str) -> dict[str, Any]:
     """Return fallback round data when the LLM judge response cannot be parsed."""
+    fallback = ScoreDefault.FALLBACK_ROUND_SCORE.value
     return {
         "pro_notes": analytical_note("Pro", pro_argument, con_argument),
         "con_notes": analytical_note("Con", con_argument, pro_argument),
-        "pro_speaker_score": 65,
-        "con_speaker_score": 65,
+        "pro_speaker_score": fallback,
+        "con_speaker_score": fallback,
         "pro_penalties": [],
         "con_penalties": [],
     }
@@ -74,24 +76,13 @@ def average_round_scores(
     pro_round_scores: list[float], con_round_scores: list[float]
 ) -> dict[str, Score]:
     """Average per-round speaker scores into final quality scores."""
-    pro_total = sum(pro_round_scores) / len(pro_round_scores) if pro_round_scores else 60.0
-    con_total = sum(con_round_scores) / len(con_round_scores) if con_round_scores else 60.0
+    default = ScoreDefault.DEFAULT_TOTAL.value
+    pro_total = sum(pro_round_scores) / len(pro_round_scores) if pro_round_scores else default
+    con_total = sum(con_round_scores) / len(con_round_scores) if con_round_scores else default
     return {
         "pro": Score(total=pro_total, breakdown=dict.fromkeys(_DIMENSIONS, pro_total)),
         "con": Score(total=con_total, breakdown=dict.fromkeys(_DIMENSIONS, con_total)),
     }
-
-
-def score_from_data(data: Any) -> Score:
-    """Parse a score dict from LLM JSON output, clamping to 0-100."""
-    if not isinstance(data, dict):
-        data = {}
-    breakdown = data.get("breakdown", {})
-    if not isinstance(breakdown, dict):
-        breakdown = {}
-    fallback_total = sum(float(breakdown.get(key, 0.0)) for key in _DIMENSIONS) / len(_DIMENSIONS)
-    total = float(data.get("total", fallback_total))
-    return Score(total=max(min(total, 100.0), 0.0), breakdown=breakdown)
 
 
 def map_penalties(agent: str, names: list[Any]) -> list[Penalty]:
@@ -103,62 +94,20 @@ def map_penalties(agent: str, names: list[Any]) -> list[Penalty]:
             pt = PenaltyType(str(name))
         except ValueError:
             continue
-        points = -15 if pt == PenaltyType.STANCE_CONTRADICTION else (-10 if pt in _heavy else -5)
+        if pt == PenaltyType.STANCE_CONTRADICTION:
+            points = PenaltyPoints.STANCE_CONTRADICTION.value
+        elif pt in _heavy:
+            points = PenaltyPoints[pt.name].value if pt.name in PenaltyPoints.__members__ else PenaltyPoints.DEFAULT.value
+        else:
+            points = PenaltyPoints.DEFAULT.value
         penalties.append(Penalty(type=pt, points=points, reason=str(name), agent=agent))
     return penalties
-
-
-def build_round_prompt(
-    template: str, round_number: int, pro_arg: str, con_arg: str, history: list[str] | None = None
-) -> str:
-    """Render the judge round-evaluation prompt, alternating speaker order by round."""
-    h = "\nDebate history (prior rounds):\n" + "\n".join(history[-4:]) + "\n" if history else ""
-    if round_number % 2 == 0:
-        first_name, first_arg, second_name, second_arg = "Pro", pro_arg, "Con", con_arg
-    else:
-        first_name, first_arg, second_name, second_arg = "Con", con_arg, "Pro", pro_arg
-    return (
-        f"{template}\n\n{h}Evaluate round {round_number}.\n"
-        f"{first_name} speech:\n{first_arg}\n\n"
-        f"{second_name} speech:\n{second_arg}\n\n"
-        'Return JSON only: {"con_notes":"...","pro_notes":"...",'
-        '"pro_speaker_score":75,"con_speaker_score":70,'
-        '"con_penalties":[],"pro_penalties":[]}.'
-    )
-
-
-def build_final_prompt(template: str, transcript: list[str]) -> str:
-    """Render the judge final-scoring prompt."""
-    schema = {s: {"breakdown": dict.fromkeys(_DIMENSIONS, 0), "total": 0} for s in ("pro", "con")}
-    return (
-        f"{template}\n\nFinal transcript JSON lines:\n"
-        + "\n".join(transcript)
-        + f"\nReturn JSON only using this schema: {json.dumps(schema)}"
-    )
-
-
-def parse_json_response(raw_response: str) -> dict[str, Any]:
-    """Extract and parse a JSON object from a raw LLM response string."""
-    raw = raw_response.strip()
-    if raw.startswith("```"):
-        raw = raw.strip("`").removeprefix("json").strip()
-    start, end = raw.find("{"), raw.rfind("}") + 1
-    if start >= 0 and end > start:
-        raw = raw[start:end]
-    data = json.loads(raw)
-    if not isinstance(data, dict):
-        raise ValueError("judge response is not a JSON object")
-    return data
 
 
 __all__ = [
     "analytical_note",
     "average_round_scores",
-    "build_final_prompt",
-    "build_round_prompt",
     "detect_repetition",
     "fallback_round_data",
     "map_penalties",
-    "parse_json_response",
-    "score_from_data",
 ]

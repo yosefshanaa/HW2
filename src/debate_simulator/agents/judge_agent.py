@@ -5,22 +5,22 @@ from typing import Any
 from debate_simulator.agents.base_agent import BaseAgent
 from debate_simulator.agents.judge_helpers import (
     average_round_scores,
-    build_final_prompt,
-    build_round_prompt,
     detect_repetition,
     fallback_round_data,
     map_penalties,
+)
+from debate_simulator.agents.judge_prompts import (
+    build_final_prompt,
+    build_round_prompt,
     parse_json_response,
 )
 from debate_simulator.models.agent import AgentResponse, TurnContext
 from debate_simulator.models.debate import RoundEvaluation, Score
-from debate_simulator.shared.constants import AgentRole
+from debate_simulator.shared.constants import AgentRole, ScoreDefault
 from debate_simulator.skills.base_skill import SkillResult
 
 _PROMPTS_DIR = Path(__file__).parent / "prompts"
 _JUDGE_PROMPT = (_PROMPTS_DIR / "judge_system.md").read_text(encoding="utf-8")
-_SPEAKER_MIN = 50.0
-_SPEAKER_MAX = 100.0
 
 
 class JudgeAgent(BaseAgent):
@@ -54,24 +54,24 @@ class JudgeAgent(BaseAgent):
             data = fallback_round_data(pro_argument, con_argument)
         self._pro_history.append(pro_argument)
         self._con_history.append(con_argument)
-        penalties = list(data.get("con_penalties", [])) + list(data.get("pro_penalties", []))
-        penalties += detect_repetition(
+        pro_raw_pen = [p for p in data.get("pro_penalties", []) if isinstance(p, str)]
+        con_raw_pen = [p for p in data.get("con_penalties", []) if isinstance(p, str)]
+        pro_rep, con_rep = detect_repetition(
             pro_argument, con_argument, self._pro_history, self._con_history
         )
-        con_pen = [p for p in penalties if isinstance(p, str)]
-        pro_score = _clamp(float(data.get("pro_speaker_score", 70)))
-        con_score = _clamp(float(data.get("con_speaker_score", 70)))
-        pro_score += random.uniform(-2.5, 2.5)
-        con_score += random.uniform(-2.5, 2.5)
-        pro_score = _clamp(pro_score)
-        con_score = _clamp(con_score)
+        default_score = ScoreDefault.DEFAULT_SPEAKER_SCORE.value
+        pro_score = _clamp(float(data.get("pro_speaker_score", default_score)))
+        con_score = _clamp(float(data.get("con_speaker_score", default_score)))
+        jitter = ScoreDefault.JITTER_RANGE.value
+        pro_score = _clamp(pro_score + random.uniform(-jitter, jitter))
+        con_score = _clamp(con_score + random.uniform(-jitter, jitter))
         self._pro_round_scores.append(pro_score)
         self._con_round_scores.append(con_score)
         return RoundEvaluation(
             pro_notes=str(data.get("pro_notes", "")),
             con_notes=str(data.get("con_notes", "")),
-            pro_penalties=map_penalties("pro", []),
-            con_penalties=map_penalties("con", con_pen),
+            pro_penalties=map_penalties("pro", pro_raw_pen + pro_rep),
+            con_penalties=map_penalties("con", con_raw_pen + con_rep),
             pro_speaker_score=pro_score,
             con_speaker_score=con_score,
             judge_message=None,
@@ -107,7 +107,7 @@ class JudgeAgent(BaseAgent):
 
 
 def _clamp(score: float) -> float:
-    return max(_SPEAKER_MIN, min(_SPEAKER_MAX, score))
+    return max(ScoreDefault.SPEAKER_MIN.value, min(ScoreDefault.SPEAKER_MAX.value, score))
 
 
 __all__ = ["JudgeAgent"]

@@ -3,7 +3,11 @@
 from __future__ import annotations
 
 from debate_simulator.models.debate import Penalty
-from debate_simulator.shared.constants import AgentRole, PenaltyType
+from debate_simulator.shared.constants import (
+    AgentRole,
+    PenaltyPoints,
+    PenaltyType,
+)
 
 
 def count_words(text: str) -> int:
@@ -18,8 +22,8 @@ def apply_limits(text: str, max_words: int, max_lines: int, role: AgentRole) -> 
     if word_count > max_words:
         penalties.append(
             Penalty(
-                type=PenaltyType.EXCEED_LINES,
-                points=-5,
+                type=PenaltyType.EXCEED_WORDS,
+                points=PenaltyPoints.EXCEED_WORDS.value,
                 reason=f"response exceeded {max_words} word limit ({word_count} words, URLs excluded)",
                 agent=role.value,
             )
@@ -28,12 +32,20 @@ def apply_limits(text: str, max_words: int, max_lines: int, role: AgentRole) -> 
         penalties.append(
             Penalty(
                 type=PenaltyType.EXCEED_LINES,
-                points=-5,
+                points=PenaltyPoints.EXCEED_LINES.value,
                 reason="response exceeded the line limit",
                 agent=role.value,
             )
         )
     return penalties
+
+
+def _fill_template(template: str, **values: str) -> str:
+    """Replace {key} placeholders in a template string."""
+    result = template
+    for key, value in values.items():
+        result = result.replace(f"{{{key}}}", value)
+    return result
 
 
 def build_debater_prompt(
@@ -65,23 +77,21 @@ def build_debater_prompt(
             f"Judge feedback on your previous round:\n{judge_feedback}\n"
             "Improve based on this feedback. Do not repeat the same weaknesses."
         )
-    return (
-        template.replace("{agent_name}", agent_name)
-        .replace("{topic}", topic)
-        .replace("{round_number}", str(round_number))
-        .replace("{total_rounds}", str(total_rounds))
-        .replace("{stance}", stance)
-        .replace(
-            "{opponent_last_argument}",
-            opponent_last_argument or "No previous argument. Open with your strongest case.",
-        )
-        .replace("{your_previous_arguments}", prev_block)
-        .replace("{used_sources}", src_block)
-        .replace("{debate_history}", history_block)
-        .replace("{research_notes}", notes_block)
-        .replace("{judge_feedback_block}", feedback_block)
-        .replace("{max_lines}", str(max_lines))
-        .replace("{max_words}", str(max_words))
+    return _fill_template(
+        template,
+        agent_name=agent_name,
+        topic=topic,
+        round_number=str(round_number),
+        total_rounds=str(total_rounds),
+        stance=stance,
+        opponent_last_argument=opponent_last_argument or "No previous argument. Open with your strongest case.",
+        your_previous_arguments=prev_block,
+        used_sources=src_block,
+        debate_history=history_block,
+        research_notes=notes_block,
+        judge_feedback_block=feedback_block,
+        max_lines=str(max_lines),
+        max_words=str(max_words),
     )
 
 

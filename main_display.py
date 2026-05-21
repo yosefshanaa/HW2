@@ -12,10 +12,12 @@ from rich.panel import Panel
 def print_round(console: Console, round_model: Any) -> None:
     """Render one debate round with pro/con panels and judge notes."""
     console.print(f"\n[bold cyan]── Round {round_model.round_number} ──[/bold cyan]")
-    console.print(Panel(round_model.con_argument, title="Con", border_style="red", padding=(0, 2)))
-    console.print(
-        Panel(round_model.pro_argument, title="Pro", border_style="green", padding=(0, 2))
-    )
+    if round_model.round_number % 2 == 0:
+        console.print(Panel(round_model.con_argument, title="Con", border_style="red", padding=(0, 2)))
+        console.print(Panel(round_model.pro_argument, title="Pro", border_style="green", padding=(0, 2)))
+    else:
+        console.print(Panel(round_model.pro_argument, title="Pro", border_style="green", padding=(0, 2)))
+        console.print(Panel(round_model.con_argument, title="Con", border_style="red", padding=(0, 2)))
     _print_judge_notes(console, round_model.judge_notes)
     _print_penalties(console, round_model.penalties)
 

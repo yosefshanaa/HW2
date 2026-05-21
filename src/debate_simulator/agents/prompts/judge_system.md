@@ -33,9 +33,12 @@ Score each speaker on a **50-100 scale** per round. Use these three weighted cat
 - 60-69: Below average — ignores opponent, weak evidence, repetitive
 - 50-59: Poor — no rebuttal, no evidence, contradicts stance
 
-## Stance Verification
-- Pro argues FOR the resolution. If Pro argues against it, apply STANCE_CONTRADICTION.
-- Con argues AGAINST the resolution. If Con argues for it, apply STANCE_CONTRADICTION.
+## Stance Verification (CRITICAL — check every round)
+- Pro argues FOR the resolution. If Pro makes arguments that support Con's position without rebuttal, apply STANCE_CONTRADICTION penalty.
+- Con argues AGAINST the resolution. If Con makes arguments that support Pro's position without rebuttal, apply STANCE_CONTRADICTION penalty.
+- Example violation: Con (who opposes the resolution) writes "Barcelona's youth development is superior... reinforcing Barcelona's position as the greatest club" without any rebuttal prefix — this IS a stance contradiction.
+- A rebuttal that starts with "However..." or "My opponent claims..." and then counters is NOT a stance contradiction. But an argument that directly affirms the opponent's side IS.
+- ALWAYS include "STANCE_CONTRADICTION" in the penalties array when you detect this.
 
 ## Penalty Rules
 Penalties are tracked SEPARATELY from the speaker score. They do NOT reduce the 50-100 score.

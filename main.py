@@ -6,7 +6,24 @@ from rich.progress import BarColumn, MofNCompleteColumn, Progress, SpinnerColumn
 from debate_simulator.hooks import HookRegistry
 from debate_simulator.sdk import DebateSimulatorSDK
 from debate_simulator.services.engine_helpers import enable_graceful_shutdown
-from main_display import print_final, print_header, print_result, print_round, print_topics
+from debate_simulator.shared.constants import ConfigFile
+
+try:
+    from main_display import print_final, print_header, print_result, print_round, print_topics
+except ImportError:
+    pass
+
+
+def _get_default_pings() -> int:
+    """Read max_pings from config, falling back to constant default."""
+    try:
+        import json
+        from pathlib import Path
+
+        config = json.loads(Path(ConfigFile.SETUP.value).read_text(encoding="utf-8"))
+        return int(config.get("debate", {}).get("max_pings", 10))
+    except (FileNotFoundError, ValueError, KeyError):
+        return 6
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -35,7 +52,9 @@ def main(argv: list[str] | None = None, sdk: Any | None = None) -> None:
         print_topics(console, debate_sdk.list_topics())
         return
     topic = args.custom_topic or _topic_from_index(debate_sdk, args.topic)
-    config = {"pings": args.pings} if args.pings else None
+    config: dict[str, Any] = {}
+    if args.pings:
+        config["pings"] = args.pings
     print_header(console, topic)
     result = debate_sdk.start_debate(topic, config=config)
     if hooks is None:
@@ -55,7 +74,7 @@ def _build_live_hooks(console: Any, args: Any) -> HookRegistry:
 
     def on_start(**kwargs: Any) -> None:
         nonlocal task_id
-        task_id = progress.add_task("Debating", total=args.pings or 10)
+        task_id = progress.add_task("Debating", total=args.pings or _get_default_pings())
         progress.start()
 
     def on_round_end(round_model: Any = None, **kwargs: Any) -> None:
