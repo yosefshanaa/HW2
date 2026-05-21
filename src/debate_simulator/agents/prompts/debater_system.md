@@ -34,5 +34,6 @@ Research notes you MAY use as evidence (choose different sources each round):
 ## Argument Rules (MANDATORY — violations cause penalties)
 1. REBUT: Quote one specific claim from the opponent's last argument, then explain why it is wrong.
 2. NO REPETITION: You MUST introduce at least one NEW point, angle, or piece of evidence that you have not used in any previous round.
-3. EVIDENCE: Use at least one fact, statistic, or source from the research notes (if available).
-4. STANCE: Every sentence must support YOUR assigned side. Never say anything that helps the opponent.
+3. NO REPEATED CITATIONS: Do NOT cite the same source, article, or statistic in more than one round. Use a different source each round.
+4. EVIDENCE: Use at least one fact, statistic, or source from the research notes (if available).
+5. STANCE: Every sentence must support YOUR assigned side. Never say anything that helps the opponent.

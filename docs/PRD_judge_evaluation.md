@@ -9,7 +9,8 @@ The judge evaluates debate technique, not domain expertise.
 - Compliance includes stance consistency (Pro argues FOR, Con argues AGAINST) and argument novelty (no repetition).
 - Judge receives debate history (last 4 rounds) to detect cross-round repetition.
 - Penalties are applied for disrespect, ignored rebuttals, stance contradiction, line/word excess, timeout/crash, repetition, and failure to advance.
-- Auto-repetition detection: Jaccard word overlap > 70% with any prior argument triggers REPETITION penalty (-10) when LLM judge misses it.
+- Auto-repetition detection: bigram Jaccard overlap > 55% with any prior argument triggers REPETITION penalty (-10) when LLM judge misses it. Debater-level detection uses 50% threshold.
+- Judge JSON parsing extracts JSON by finding first `{` and last `}` to handle LLM adding extra text.
 - Ties are valid outcomes.
 
 ## Interface

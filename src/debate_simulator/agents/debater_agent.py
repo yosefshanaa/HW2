@@ -10,8 +10,8 @@ from debate_simulator.skills.base_skill import SkillResult
 
 _PROMPTS_DIR = Path(__file__).parent / "prompts"
 _DEBATER_PROMPT = (_PROMPTS_DIR / "debater_system.md").read_text(encoding="utf-8")
-_REPETITION_OVERLAP_THRESHOLD = 0.6
-_WORD_COUNT_PENALTY_THRESHOLD = 60
+_REPETITION_OVERLAP_THRESHOLD = 0.5
+_WORD_COUNT_PENALTY_THRESHOLD = 75
 
 
 class DebaterAgent(BaseAgent, ABC):
@@ -131,20 +131,22 @@ class DebaterAgent(BaseAgent, ABC):
         return AgentResponse.from_text(text, time_seconds=0, penalties=penalties)
 
     def _check_repetition(self, text: str) -> Penalty | None:
-        """Detect if response is too similar to any prior argument."""
+        """Detect if response reuses phrases from any prior argument via bigram overlap."""
         if not self.previous_arguments:
             return None
-        current_words = set(text.lower().split())
+        current_bigrams = set(zip(text.lower().split(), text.lower().split()[1:], strict=False))
+        if not current_bigrams:
+            return None
         for prev in self.previous_arguments:
-            prev_words = set(prev.lower().split())
-            if not prev_words:
+            prev_bigrams = set(zip(prev.lower().split(), prev.lower().split()[1:], strict=False))
+            if not prev_bigrams:
                 continue
-            overlap = len(current_words & prev_words) / len(current_words | prev_words)
+            overlap = len(current_bigrams & prev_bigrams) / len(current_bigrams | prev_bigrams)
             if overlap > _REPETITION_OVERLAP_THRESHOLD:
                 return Penalty(
                     type=PenaltyType.REPETITION,
                     points=PenaltyPoints.REPETITION.value,
-                    reason=f"argument overlaps {overlap:.0%} with a prior round",
+                    reason=f"argument bigram overlap {overlap:.0%} with a prior round",
                     agent=self.role.value,
                 )
         return None

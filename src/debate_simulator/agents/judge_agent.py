@@ -11,7 +11,7 @@ from debate_simulator.skills.base_skill import SkillResult
 _PROMPTS_DIR = Path(__file__).parent / "prompts"
 _JUDGE_PROMPT = (_PROMPTS_DIR / "judge_system.md").read_text(encoding="utf-8")
 _DIMENSIONS = ["argument_strength", "rebuttal_effectiveness", "evidence_research", "rhetorical_quality", "compliance"]
-_JUDGE_REPETITION_THRESHOLD = 0.7
+_JUDGE_REPETITION_THRESHOLD = 0.55
 
 
 class JudgeAgent(BaseAgent):
@@ -63,17 +63,19 @@ class JudgeAgent(BaseAgent):
         return flagged
 
     def _is_repetitive(self, text: str, history: list[str]) -> bool:
-        """Check if text has high word overlap with any prior argument."""
+        """Check if text reuses phrases from prior arguments via bigram overlap."""
         if not history:
             return False
-        current_words = set(text.lower().split())
-        if len(current_words) < 5:
+        words = text.lower().split()
+        if len(words) < 5:
             return False
+        current_bigrams = set(zip(words, words[1:], strict=False))
         for prev in history:
-            prev_words = set(prev.lower().split())
-            if not prev_words:
+            prev_words = prev.lower().split()
+            if len(prev_words) < 5:
                 continue
-            overlap = len(current_words & prev_words) / len(current_words | prev_words)
+            prev_bigrams = set(zip(prev_words, prev_words[1:], strict=False))
+            overlap = len(current_bigrams & prev_bigrams) / len(current_bigrams | prev_bigrams)
             if overlap > _JUDGE_REPETITION_THRESHOLD:
                 return True
         return False
@@ -139,6 +141,10 @@ class JudgeAgent(BaseAgent):
         raw = self.llm_client.complete(prompt).strip()
         if raw.startswith("```"):
             raw = raw.strip("`").removeprefix("json").strip()
+        start = raw.find("{")
+        end = raw.rfind("}") + 1
+        if start >= 0 and end > start:
+            raw = raw[start:end]
         data = json.loads(raw)
         if not isinstance(data, dict):
             raise ValueError("judge response is not a JSON object")
@@ -156,8 +162,8 @@ class JudgeAgent(BaseAgent):
 
     def _fallback_round(self, pro_argument: str, con_argument: str) -> dict[str, Any]:
         return {
-            "pro_notes": self._short_note("pro", pro_argument, con_argument),
-            "con_notes": self._short_note("con", con_argument, pro_argument),
+            "pro_notes": self._analytical_note("Pro", pro_argument, con_argument),
+            "con_notes": self._analytical_note("Con", con_argument, pro_argument),
             "pro_penalties": [],
             "con_penalties": [],
         }
@@ -180,10 +186,14 @@ class JudgeAgent(BaseAgent):
         evidence_terms = ["because", "evidence", "source", "data", "history", "record", "example"]
         return min(len(argument.split()) / 80, 5.0) + sum(term in argument.lower() for term in evidence_terms)
 
-    def _short_note(self, agent: str, argument: str, opponent: str) -> str:
+    def _analytical_note(self, agent: str, argument: str, opponent: str) -> str:
         addressed = bool(set(argument.lower().split()) & set(opponent.lower().split()))
-        status = "addressed the opponent" if addressed else "needs a more direct rebuttal"
-        return f"{agent} {status}; argument length {len(argument.split())} words."
+        has_evidence = any(term in argument.lower() for term in ["because", "evidence", "source", "data", "according"])
+        word_count = len(argument.split())
+        parts = [f"{agent} {'addressed the opponent' if addressed else 'needs a more direct rebuttal'}."]
+        parts.append(f"Uses {'some' if has_evidence else 'no'} supporting evidence.")
+        parts.append(f"Argument length: {word_count} words.")
+        return " ".join(parts)
 
     def _penalties(self, agent: str, names: list[Any]) -> list[Penalty]:
         penalties = []

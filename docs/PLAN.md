@@ -702,7 +702,7 @@ Implementation:
     "agent_timeout_seconds": 60,
     "keepalive_interval_seconds": 10,
     "max_lines_per_response": 2,
-    "max_words_per_response": 60,
+    "max_words_per_response": 75,
     "max_tokens_per_response": 512,
     "research_timeout_seconds": 120
   },
