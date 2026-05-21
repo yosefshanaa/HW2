@@ -40,6 +40,7 @@ class DebaterAgent(BaseAgent, ABC):
         self.current_max_words = _WORD_COUNT_PENALTY_THRESHOLD
         self.previous_arguments: list[str] = []
         self.used_sources: list[str] = []
+        self.known_sources: list[str] = []
 
     def research(self, topic: str) -> list[str]:
         """Run optional project-local web-search research for the topic."""
@@ -57,6 +58,8 @@ class DebaterAgent(BaseAgent, ABC):
             snippet = getattr(item, "snippet", "")
             url = getattr(item, "url", "")
             self.research_notes.append(f"{title}: {snippet} ({url})")
+            if title and len(title) > 3:
+                self.known_sources.append(title)
         return self.research_notes
 
     def build_argument(self, topic: str) -> str:
@@ -174,17 +177,36 @@ class DebaterAgent(BaseAgent, ABC):
         for word in text.split():
             if word.startswith("http") and word not in self.used_sources:
                 self.used_sources.append(word)
+        for source in self.known_sources:
+            if source in text and source not in self.used_sources:
+                self.used_sources.append(source)
+        inline_names = re.findall(r'\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)\b', text)
+        for name in inline_names:
+            if len(name) > 5 and name not in self.used_sources:
+                self.used_sources.append(name)
 
     def _check_source_reuse(self, text: str) -> Penalty | None:
         """Penalize if a previously used citation appears again."""
-        for source in self.used_sources:
-            if len(source) > 4 and source in text and source != self.used_sources[-1]:
+        for source in self.used_sources[:-1]:
+            if len(source) < 4:
+                continue
+            if source in text:
                 return Penalty(
                     type=PenaltyType.REPETITION,
                     points=PenaltyPoints.REPETITION.value,
-                    reason=f"reused citation: {source[:50]}",
+                    reason=f"reused citation: {source[:60]}",
                     agent=self.role.value,
                 )
+            if len(source.split()) >= 2 and source.split()[0] in text:
+                short = source.split()[0]
+                prior_first_words = [s.split()[0] for s in self.used_sources[:-1] if len(s.split()) >= 2]
+                if short in prior_first_words and short not in ["The", "This", "According"]:
+                    return Penalty(
+                        type=PenaltyType.REPETITION,
+                        points=PenaltyPoints.REPETITION.value,
+                        reason=f"reused citation: {source[:60]}",
+                        agent=self.role.value,
+                    )
         return None
 
     def _sanitize_response(self, response: str) -> str:
