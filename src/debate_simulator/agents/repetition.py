@@ -7,9 +7,11 @@ import re
 from debate_simulator.models.debate import Penalty
 from debate_simulator.shared.constants import PenaltyPoints, PenaltyType
 
-_OVERLAP_THRESHOLD = 0.5
+_OVERLAP_THRESHOLD = 0.35
 _EXPLICIT_SOURCE_RE = re.compile(r"\(source:\s*([^)]+)\)", re.IGNORECASE)
-_INLINE_CITE_RE = re.compile(r'"([^"]{6,})"')
+_QUOTED_SOURCE_RE = re.compile(
+    r'"([A-Z][^"]*(?:\d{4}|University|Institute|Journal|ESPN|BBC|Reuters|FIFA|Uefa|Forbes|Deloitte)[^"]*)"'
+)
 
 
 def check_repetition(text: str, previous_arguments: list[str], agent: str) -> Penalty | None:
@@ -62,7 +64,7 @@ def extract_sources(text: str, used_sources: list[str], known_sources: list[str]
         cleaned = match.strip()
         if len(cleaned) >= 4 and cleaned not in used_sources:
             used_sources.append(cleaned)
-    for match in _INLINE_CITE_RE.findall(text):
+    for match in _QUOTED_SOURCE_RE.findall(text):
         if match not in used_sources:
             used_sources.append(match)
     for word in text.split():

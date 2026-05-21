@@ -34,9 +34,11 @@ Research notes you MAY use as evidence (choose different sources each round):
 - No filler, no preamble, no meta-commentary. Every word must advance your case.
 - Be respectful; no insults or ad hominem.
 
-## Argument Rules (MANDATORY — violations cause penalties)
+## Argument Rules (MANDATORY — violations cause -15 penalty)
 1. REBUT: Quote one specific claim from the opponent's last argument, then explain why it is wrong.
-2. NO REPETITION: You MUST introduce at least one NEW point, angle, or piece of evidence that you have not used in any previous round.
+2. NEW ARGUMENT EVERY ROUND (critical): You MUST introduce a completely NEW angle, statistic, or piece of evidence that has NEVER appeared in any of your previous arguments. Read "{your_previous_arguments}" carefully — if a point was already made, you CANNOT say it again. Penalized heavily.
 3. NO REPEATED CITATIONS: Do NOT cite the same source, article, or statistic in more than one round. Use a different source each round.
 4. EVIDENCE: Use at least one fact, statistic, or source from the research notes (if available).
 5. STANCE: Every sentence must support YOUR assigned side. Never say anything that helps the opponent.
+6. BAD example (PENALIZED): Round 1 mentions "14 Champions League titles". Round 2 mentions "14 Champions League titles" again — this IS repetition even if rephrased.
+7. GOOD example: Round 1 discusses titles. Round 2 discusses youth development. Round 3 discusses fan culture. Each round covers DIFFERENT ground.
