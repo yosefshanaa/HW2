@@ -102,7 +102,7 @@ The judge is **not a domain expert** — he evaluates based on **argumentation q
 | `agent_timeout` | 60s | Yes | Max time per agent turn before process kill |
 | `keepalive_interval` | 10s | Yes | Watchdog keep-alive ping interval |
 | `max_lines_per_response` | 2 | Yes | Max lines per agent response |
-| `max_words_per_response` | 75 | Yes | Max words per agent response |
+| `max_words_per_response` | 90 | Yes | Max words per agent response (URLs excluded) |
 | `max_tokens_per_response` | 512 | Yes | Max tokens per LLM call |
 | `research_timeout` | 120s | Yes | Max time for internet research phase |
 

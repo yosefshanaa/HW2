@@ -325,6 +325,7 @@ Issues identified from manual test: agents repeat arguments, Pro argues Con's po
 | 15.18 | Run `uv run pytest` — all existing tests pass with new signatures | P0 | [x] | 15.1–15.13 |
 | 15.19 | Run `uv run ruff check src/` — 0 errors | P0 | [x] | 15.1–15.13 |
 | 15.20 | Second manual test: raise word cap 60→75, upgrade repetition to bigram overlap, fix judge JSON parse, improve fallback notes, ban repeated citations in prompt | P0 | [x] | 15.18 |
+| 15.21 | Third manual test: raise word cap 75→90, exclude URLs from word count, add source-reuse detection, inject used sources into prompt | P0 | [x] | 15.20 |
 
 ---
 
@@ -332,8 +333,8 @@ Issues identified from manual test: agents repeat arguments, Pro argues Con's po
 
 | Category | Count |
 |----------|-------|
-| Total tasks | **141** |
-| P0 (critical) | **90** |
+| Total tasks | **142** |
+| P0 (critical) | **91** |
 | P1 (high) | **42** |
 | P2 (medium) | **9** |
 | P3 (low) | **0** |

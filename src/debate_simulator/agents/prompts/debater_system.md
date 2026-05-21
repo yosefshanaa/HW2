@@ -17,6 +17,9 @@ Opponent's previous argument:
 Your previous arguments (DO NOT repeat these points or phrases):
 {your_previous_arguments}
 
+Sources you already used (DO NOT cite these again):
+{used_sources}
+
 Debate history so far:
 {debate_history}
 

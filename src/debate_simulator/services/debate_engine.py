@@ -39,7 +39,7 @@ class DebateEngine:
             if research:
                 research(topic)
 
-    def run_debate_pings(self, topic: str, pings: int, max_lines: int = 2, max_words: int = 75) -> list[Round]:
+    def run_debate_pings(self, topic: str, pings: int, max_lines: int = 2, max_words: int = 90) -> list[Round]:
         """Run debate pings in Con to Pro to Judge order."""
         self.rounds = []
         debate_history: list[str] = []
@@ -133,7 +133,7 @@ class DebateEngine:
         debate_config = config or {}
         pings = int(debate_config.get("pings", 6))
         max_lines = int(debate_config.get("max_lines", 2))
-        max_words = int(debate_config.get("max_words", 75))
+        max_words = int(debate_config.get("max_words", 90))
         self.hooks.emit("on_debate_start", topic=topic)
         self.run_research_phase(topic)
         rounds = self.run_debate_pings(topic, pings, max_lines=max_lines, max_words=max_words)
