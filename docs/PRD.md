@@ -126,24 +126,29 @@ See also: `docs/PRD_search_engine.md`, `docs/PRD_rag_system.md`
 
 ### 3.6 Judge's Evaluation Criteria
 
-The judge evaluates each debater on the following dimensions, each scored 0-100%:
+The judge evaluates each debater per round on a **50-100 speaker score scale**, then averages across rounds for the final quality score. Three weighted categories based on World Schools Debate Championship rules:
 
 | Criterion | Weight | Description |
 |-----------|--------|-------------|
-| **Argument Strength** | 25% | Logical coherence, evidence quality, persuasiveness |
-| **Rebuttal Effectiveness** | 25% | How well the debater addressed and countered the opponent's point |
-| **Evidence & Research** | 20% | Use of factual data, statistics, credible sources |
-| **Rhetorical Quality** | 15% | Clarity, structure, persuasion technique, rhetorical devices |
-| **Compliance** | 15% | Respect, staying on topic, replying to opponent, no contradiction with own stance |
+| **Content** | 40% | Arguments (claim + warrant + impact), evidence quality, credibility, recency |
+| **Style** | 30% | Rhetoric, clarity, rebuttal effectiveness, respectful tone |
+| **Strategy** | 30% | Engagement with opponent, dropped argument detection, stance consistency, novelty |
 
-**Penalties** (deducted from final score):
-- Disrespectful language: -5% per occurrence
-- Ignoring opponent's point: -10% per occurrence
-- Contradicting own stance: -15% per occurrence
-- Exceeding line or word limit: -5% per occurrence
-- Exceeding time limit (auto-kill): -10% per occurrence
-- Repeating arguments from earlier rounds: -10% per occurrence
-- Failing to advance the debate with new content: -10% per occurrence
+**Per-round scoring scale:**
+- 90-100: Excellent — strong claim-warrant-impact chains, devastating rebuttals
+- 80-89: Good — solid arguments, effective rebuttals
+- 70-79: Average — some good points but weak rebuttals or repetitive
+- 60-69: Below average — ignores opponent, weak evidence
+- 50-59: Poor — no rebuttal, no evidence, contradicts stance
+
+**Penalties** are tracked separately and do NOT reduce the quality score:
+- Disrespectful language: tracked
+- Ignoring opponent's point: tracked
+- Contradicting own stance: tracked
+- Exceeding line or word limit: tracked
+- Exceeding time limit (auto-kill): tracked
+- Repeating arguments from earlier rounds: tracked
+- Failing to advance the debate with new content: tracked
 
 **Ties are valid** — not every debate needs a clear winner. The judge may declare a tie.
 

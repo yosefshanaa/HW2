@@ -104,7 +104,7 @@ class DebateEngine:
         return f"The judge's feedback on your last speech: {notes}" if notes else ""
 
     def run_final_scoring(self) -> tuple[dict[str, Any], str]:
-        """Run final judge scoring."""
+        """Run final judge scoring. Penalties are tracked but do NOT reduce quality scores."""
         scores = self.judge_agent.evaluate_debate(
             [round_model.model_dump_json() for round_model in self.rounds]
         )
@@ -113,8 +113,8 @@ class DebateEngine:
                 score = scores.get(penalty.agent)
                 if score is None:
                     continue
-                score.total = max(score.total + penalty.points, 0.0)
                 score.penalties_applied.append(penalty)
+                score.penalty_total += penalty.points
         return scores, self.judge_agent.declare_winner(scores)
 
     def export_results(self, result: DebateResult) -> Path:

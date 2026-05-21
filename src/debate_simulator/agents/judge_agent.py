@@ -10,8 +10,10 @@ from debate_simulator.skills.base_skill import SkillResult
 
 _PROMPTS_DIR = Path(__file__).parent / "prompts"
 _JUDGE_PROMPT = (_PROMPTS_DIR / "judge_system.md").read_text(encoding="utf-8")
-_DIMENSIONS = ["argument_strength", "rebuttal_effectiveness", "evidence_research", "rhetorical_quality", "compliance"]
+_DIMENSIONS = ["content", "style", "strategy"]
 _JUDGE_REPETITION_THRESHOLD = 0.55
+_SPEAKER_SCORE_MIN = 50.0
+_SPEAKER_SCORE_MAX = 100.0
 
 
 class JudgeAgent(BaseAgent):
@@ -22,6 +24,8 @@ class JudgeAgent(BaseAgent):
         super().__init__(name=name, role=AgentRole.JUDGE, llm_client=llm_client, skills=skills)
         self._pro_history: list[str] = []
         self._con_history: list[str] = []
+        self._pro_round_scores: list[float] = []
+        self._con_round_scores: list[float] = []
 
     def observe_round(
         self,
@@ -30,7 +34,7 @@ class JudgeAgent(BaseAgent):
         con_argument: str,
         debate_history: list[str] | None = None,
     ) -> RoundEvaluation:
-        """Observe one round and return private judge notes."""
+        """Observe one round and return private judge notes with speaker scores."""
         try:
             data = self._json_from_llm(
                 self._round_prompt(round_number, pro_argument, con_argument, debate_history)
@@ -45,13 +49,24 @@ class JudgeAgent(BaseAgent):
         pro_pen = []
         con_penalties = self._penalties("con", con_pen)
         pro_penalties = self._penalties("pro", pro_pen)
+        pro_score = self._clamp_score(float(data.get("pro_speaker_score", 70)))
+        con_score = self._clamp_score(float(data.get("con_speaker_score", 70)))
+        self._pro_round_scores.append(pro_score)
+        self._con_round_scores.append(con_score)
         return RoundEvaluation(
             pro_notes=str(data.get("pro_notes", "")),
             con_notes=str(data.get("con_notes", "")),
             pro_penalties=pro_penalties,
             con_penalties=con_penalties,
+            pro_speaker_score=pro_score,
+            con_speaker_score=con_score,
             judge_message=None,
         )
+
+    @staticmethod
+    def _clamp_score(score: float) -> float:
+        """Clamp a speaker score to the valid 50-100 range."""
+        return max(_SPEAKER_SCORE_MIN, min(_SPEAKER_SCORE_MAX, score))
 
     def _auto_repetition_penalties(self, pro_argument: str, con_argument: str) -> list[str]:
         """Auto-detect repetition when LLM judge misses it."""
@@ -81,21 +96,21 @@ class JudgeAgent(BaseAgent):
         return False
 
     def evaluate_debate(self, transcript: list[str]) -> dict[str, Score]:
-        """Evaluate a transcript and return final scores."""
-        try:
-            data = self._json_from_llm(self._final_prompt(transcript))
-            return {
-                "pro": self._score_from_data(data.get("pro", {})),
-                "con": self._score_from_data(data.get("con", {})),
-            }
-        except Exception:
-            return self._fallback_scores(transcript)
+        """Average per-round speaker scores into final quality scores (50-100 scale)."""
+        pro_total = sum(self._pro_round_scores) / len(self._pro_round_scores) if self._pro_round_scores else 60.0
+        con_total = sum(self._con_round_scores) / len(self._con_round_scores) if self._con_round_scores else 60.0
+        pro_breakdown = dict.fromkeys(_DIMENSIONS, pro_total)
+        con_breakdown = dict.fromkeys(_DIMENSIONS, con_total)
+        return {
+            "pro": Score(total=pro_total, breakdown=pro_breakdown),
+            "con": Score(total=con_total, breakdown=con_breakdown),
+        }
 
     def declare_winner(self, scores: dict[str, Score]) -> str:
-        """Declare pro, con, or tie from final scores."""
+        """Declare pro, con, or tie based on quality scores."""
         pro_total = scores["pro"].total
         con_total = scores["con"].total
-        if pro_total == con_total:
+        if abs(pro_total - con_total) < 2.0:
             return "tie"
         return "pro" if pro_total > con_total else "con"
 
@@ -126,6 +141,7 @@ class JudgeAgent(BaseAgent):
             f"Evaluate round {round_number}.\n"
             f"Con speech:\n{con_argument}\n\nPro speech:\n{pro_argument}\n\n"
             'Return JSON only: {"con_notes":"...","pro_notes":"...",'
+            '"pro_speaker_score":75,"con_speaker_score":70,'
             '"con_penalties":[],"pro_penalties":[]}.'
         )
 
@@ -164,27 +180,19 @@ class JudgeAgent(BaseAgent):
         return {
             "pro_notes": self._analytical_note("Pro", pro_argument, con_argument),
             "con_notes": self._analytical_note("Con", con_argument, pro_argument),
+            "pro_speaker_score": 65,
+            "con_speaker_score": 65,
             "pro_penalties": [],
             "con_penalties": [],
         }
 
     def _fallback_scores(self, transcript: list[str]) -> dict[str, Score]:
-        totals = {"pro": 60.0, "con": 60.0}
-        for raw_round in transcript:
-            try:
-                row = json.loads(raw_round)
-            except json.JSONDecodeError:
-                continue
-            totals["pro"] += self._argument_points(str(row.get("pro_argument", "")))
-            totals["con"] += self._argument_points(str(row.get("con_argument", "")))
+        pro_total = sum(self._pro_round_scores) / len(self._pro_round_scores) if self._pro_round_scores else 60.0
+        con_total = sum(self._con_round_scores) / len(self._con_round_scores) if self._con_round_scores else 60.0
         return {
-            side: Score(total=min(total, 100.0), breakdown={"fallback": min(total, 100.0)})
-            for side, total in totals.items()
+            "pro": Score(total=pro_total, breakdown=dict.fromkeys(_DIMENSIONS, pro_total)),
+            "con": Score(total=con_total, breakdown=dict.fromkeys(_DIMENSIONS, con_total)),
         }
-
-    def _argument_points(self, argument: str) -> float:
-        evidence_terms = ["because", "evidence", "source", "data", "history", "record", "example"]
-        return min(len(argument.split()) / 80, 5.0) + sum(term in argument.lower() for term in evidence_terms)
 
     def _analytical_note(self, agent: str, argument: str, opponent: str) -> str:
         addressed = bool(set(argument.lower().split()) & set(opponent.lower().split()))

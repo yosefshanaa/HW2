@@ -734,11 +734,9 @@ Implementation:
   },
   "scoring": {
     "weights": {
-      "argument_strength": 0.25,
-      "rebuttal_effectiveness": 0.25,
-      "evidence_research": 0.20,
-      "rhetorical_quality": 0.15,
-      "compliance": 0.15
+      "content": 0.40,
+      "style": 0.30,
+      "strategy": 0.30
     }
   }
 }

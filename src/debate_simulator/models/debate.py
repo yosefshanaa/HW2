@@ -23,6 +23,7 @@ class Score(BaseModel):
     total: float
     breakdown: dict[str, float]
     penalties_applied: list[Penalty] = Field(default_factory=list)
+    penalty_total: float = 0.0
 
 
 class RoundEvaluation(BaseModel):
@@ -32,6 +33,8 @@ class RoundEvaluation(BaseModel):
     con_notes: str = ""
     pro_penalties: list[Penalty] = Field(default_factory=list)
     con_penalties: list[Penalty] = Field(default_factory=list)
+    pro_speaker_score: float | None = None
+    con_speaker_score: float | None = None
     judge_message: str | None = None
 
 
