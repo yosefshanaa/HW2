@@ -179,7 +179,7 @@ Every task in this TODO is "done" when **all** of the following are true:
 | 8.6 | Implement `services/scoring_service.py` — weighted score computation, penalty application | P0 | [x] | 6.3 |
 | 8.7 | Implement `main.py` — CLI entry point consuming SDK (argparse + rich) | P0 | [x] | 7.6 |
 | 8.8 | Implement CLI flags: `--topic`, `--custom-topic`, `--pings`, `--config`, `--list-topics` | P0 | [x] | 8.7 |
-| 8.9 | Implement rich terminal output — round headers, agent names, progress bars | P2 | [~] | 8.7 |
+| 8.9 | Implement rich terminal output — round headers, agent names, progress bars | P2 | [x] | 8.7 |
 | 8.10 | Unit test (RED): DebateEngine — mock agents, verify flow, verify JSON output | P0 | [x] | 8.1 |
 | 8.11 | Unit test (RED): ScoringService — verify weighted scoring, penalty deduction, tie detection | P0 | [x] | 8.6 |
 | 8.12 | Unit test (RED): CLI — verify argument parsing | P1 | [x] | 8.8 |
@@ -197,7 +197,7 @@ Every task in this TODO is "done" when **all** of the following are true:
 | 9.3 | Handle search failure — proceed with agent's knowledge, log warning | P1 | [x] | 4.1 |
 | 9.4 | Handle RAG failure — proceed without retrieval, log warning | P1 | [x] | 4.3 |
 | 9.5 | Handle agent crash mid-debate — continue, apply penalty to crashed agent | P1 | [x] | 8.3 |
-| 9.6 | Handle graceful shutdown (Ctrl+C) — save partial results, cleanup FIFO | P1 | [~] | 8.7 |
+| 9.6 | Handle graceful shutdown (Ctrl+C) — save partial results, cleanup FIFO | P1 | [x] | 8.7 |
 | 9.7 | Handle missing `.env` / missing API key — clear error on startup | P0 | [x] | 1.5 |
 | 9.8 | Handle edge cases: empty input, null LLM response, concurrent failures | P1 | [x] | 8.3 |
 
@@ -255,11 +255,9 @@ Every task in this TODO is "done" when **all** of the following are true:
 | 12.10 | Create `README.md` — installation, usage, examples, architecture, config reference | P0 | [x] | 8.7 |
 | 12.11 | Add C4 architecture diagrams to README (ASCII or mermaid) | P0 | [x] | 12.10 |
 | 12.12 | Add screenshots of terminal debate output to README | P0 | [~] | 10.4 |
-| 12.13 | Add example JSON output to README | P1 | [~] | 8.5 |
-| 12.14 | Document all CLI flags and config options | P0 | [x] | 8.8, 1.7 |
-| 12.15 | Document skill system — how skills work, how to add new ones | P2 | [x] | 5.1 |
-| 12.16 | Create results analysis notebook — per-agent score tables, cross-run comparisons, statistics | P1 | [~] | 10.4 |
-| 12.17 | Generate visualizations — bar charts (score comparison), line charts (cross-run variance), heatmaps (criteria correlation) | P1 | [~] | 12.16 |
+| 12.13 | Add example JSON output to README | P1 | [x] | 8.5 |
+| 12.16 | Create results analysis notebook — per-agent score tables, cross-run comparisons, statistics | P1 | [x] | 10.4 |
+| 12.17 | Generate visualizations — bar charts (score comparison), line charts (cross-run variance), heatmaps (criteria correlation) | P1 | [x] | 12.16 |
 | 12.18 | Add License & Credits section to README | P1 | [x] | 12.10 |
 | 12.19 | Include assignment PDF from Moodle + student photos in submission package | P1 | [~] | 14.16 |
 

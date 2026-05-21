@@ -1,22 +1,23 @@
 import argparse
 from typing import Any
 
-from rich.console import Console
-from rich.panel import Panel
+from rich.progress import BarColumn, MofNCompleteColumn, Progress, SpinnerColumn, TextColumn
 
 from debate_simulator.hooks import HookRegistry
 from debate_simulator.sdk import DebateSimulatorSDK
+from debate_simulator.services.engine_helpers import enable_graceful_shutdown
+from main_display import print_final, print_header, print_result, print_round, print_topics
 
 
 def build_parser() -> argparse.ArgumentParser:
     """Build the CLI argument parser."""
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--topic", type=int)
-    parser.add_argument("--custom-topic")
-    parser.add_argument("--pings", type=int)
-    parser.add_argument("--config", default="config/setup.json")
-    parser.add_argument("--list-topics", action="store_true")
-    parser.add_argument("--verbose", action="store_true")
+    parser = argparse.ArgumentParser(description="AI Court Debate Simulator")
+    parser.add_argument("--topic", type=int, help="Topic number (1-10)")
+    parser.add_argument("--custom-topic", help="Custom debate topic")
+    parser.add_argument("--pings", type=int, help="Number of debate pings")
+    parser.add_argument("--config", default="config/setup.json", help="Config file path")
+    parser.add_argument("--list-topics", action="store_true", help="List available topics")
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose logging")
     return parser
 
 
@@ -24,25 +25,56 @@ def main(argv: list[str] | None = None, sdk: Any | None = None) -> None:
     """Run the terminal CLI using only the SDK."""
     parser = build_parser()
     args = parser.parse_args(argv)
+    from rich.console import Console
+
     console = Console()
-    hooks = _build_live_hooks(console) if sdk is None else None
+    enable_graceful_shutdown()
+    hooks = _build_live_hooks(console, args) if sdk is None else None
     debate_sdk = sdk or DebateSimulatorSDK(hooks=hooks)
     if args.list_topics:
-        for index, topic in enumerate(debate_sdk.list_topics(), start=1):
-            console.print(f"{index}. {topic}")
+        print_topics(console, debate_sdk.list_topics())
         return
     topic = args.custom_topic or _topic_from_index(debate_sdk, args.topic)
     config = {"pings": args.pings} if args.pings else None
+    print_header(console, topic)
     result = debate_sdk.start_debate(topic, config=config)
     if hooks is None:
-        _print_result(console, result)
+        print_result(console, result)
 
 
-def _build_live_hooks(console: Console) -> HookRegistry:
+def _build_live_hooks(console: Any, args: Any) -> HookRegistry:
     hooks = HookRegistry()
-    hooks.register_hook("on_debate_start", lambda topic: console.rule(str(topic)))
-    hooks.register_hook("on_round_end", lambda round_model, **_: _print_round(console, round_model))
-    hooks.register_hook("on_debate_end", lambda results: _print_final(console, results))
+    progress = Progress(
+        SpinnerColumn(),
+        TextColumn("[bold blue]{task.description}"),
+        BarColumn(),
+        MofNCompleteColumn(),
+        console=console,
+    )
+    task_id = None
+
+    def on_start(**kwargs: Any) -> None:
+        nonlocal task_id
+        task_id = progress.add_task("Debating", total=args.pings or 10)
+        progress.start()
+
+    def on_round_end(round_model: Any = None, **kwargs: Any) -> None:
+        nonlocal task_id
+        if task_id is not None:
+            progress.update(task_id, advance=1)
+        if round_model is not None:
+            print_round(console, round_model)
+
+    def on_end(results: Any = None, **kwargs: Any) -> None:
+        nonlocal task_id
+        if task_id is not None:
+            progress.stop()
+        if results is not None:
+            print_final(console, results)
+
+    hooks.register_hook("on_debate_start", on_start)
+    hooks.register_hook("on_round_end", on_round_end)
+    hooks.register_hook("on_debate_end", on_end)
     return hooks
 
 
@@ -51,52 +83,6 @@ def _topic_from_index(sdk: Any, topic_index: int | None) -> str:
     if topic_index is None:
         return topics[0]
     return topics[topic_index - 1]
-
-
-def _print_result(console: Console, result: Any) -> None:
-    console.rule(str(result.topic))
-    for round_model in result.rounds:
-        _print_round(console, round_model)
-    _print_final(console, result)
-
-
-def _print_round(console: Console, round_model: Any) -> None:
-    console.print(f"[bold]Ping {round_model.round_number}[/bold]")
-    console.print(Panel(round_model.con_argument, title="Con", border_style="red"))
-    console.print(Panel(round_model.pro_argument, title="Pro", border_style="green"))
-    _print_judge_notes(console, round_model.judge_notes)
-    _print_penalties(console, round_model.penalties)
-
-
-def _print_final(console: Console, result: Any) -> None:
-    console.rule("Final")
-    _print_scores(console, getattr(result, "final_scores", {}))
-    console.print(f"[bold]Winner:[/bold] {result.winner}")
-
-
-def _print_judge_notes(console: Console, judge_notes: Any) -> None:
-    pro_notes = getattr(judge_notes, "pro_notes", "")
-    con_notes = getattr(judge_notes, "con_notes", "")
-    if pro_notes or con_notes:
-        console.print(Panel(f"Con: {con_notes}\nPro: {pro_notes}", title="Judge Notes"))
-
-
-def _print_penalties(console: Console, penalties: list[Any]) -> None:
-    if not penalties:
-        return
-    lines = [f"{penalty.agent}: {penalty.type.value} ({penalty.points}) {penalty.reason}" for penalty in penalties]
-    console.print(Panel("\n".join(lines), title="Penalties", border_style="yellow"))
-
-
-def _print_scores(console: Console, scores: dict[str, Any]) -> None:
-    if not scores:
-        return
-    lines = []
-    for side in ["con", "pro"]:
-        score = scores.get(side)
-        if score is not None:
-            lines.append(f"{side.title()}: {getattr(score, 'total', 0):.1f}%")
-    console.print(Panel("\n".join(lines), title="Scores"))
 
 
 if __name__ == "__main__":

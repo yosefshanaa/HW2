@@ -3,20 +3,18 @@ from pathlib import Path
 from typing import Any
 
 from debate_simulator.agents.base_agent import BaseAgent
+from debate_simulator.agents.debater_helpers import (
+    apply_limits,
+    build_debater_prompt,
+)
+from debate_simulator.agents.repetition import check_repetition, check_source_reuse, extract_sources
 from debate_simulator.models.agent import AgentResponse, TurnContext
-from debate_simulator.models.debate import Penalty
-from debate_simulator.shared.constants import AgentRole, PenaltyPoints, PenaltyType, Stance
+from debate_simulator.shared.constants import AgentRole, Stance
 from debate_simulator.skills.base_skill import SkillResult
 
 _PROMPTS_DIR = Path(__file__).parent / "prompts"
 _DEBATER_PROMPT = (_PROMPTS_DIR / "debater_system.md").read_text(encoding="utf-8")
-_REPETITION_OVERLAP_THRESHOLD = 0.5
 _WORD_COUNT_PENALTY_THRESHOLD = 90
-
-
-def _count_words(text: str) -> int:
-    """Count words excluding URL tokens."""
-    return sum(1 for w in text.split() if "://" not in w)
 
 
 class DebaterAgent(BaseAgent, ABC):
@@ -76,35 +74,21 @@ class DebaterAgent(BaseAgent, ABC):
         max_words = int(context.metadata.get("max_words", _WORD_COUNT_PENALTY_THRESHOLD))
         self.current_max_lines = max_lines
         self.current_max_words = max_words
-        notes = self.research_notes or context.research or ["No external notes."]
-        research_notes = "\n".join(notes)
-        debate_history = "\n---\n".join(context.debate_history) if context.debate_history else "No prior rounds."
-        prev_args = "\n".join(f"- {arg}" for arg in self.previous_arguments) if self.previous_arguments else "None yet."
-        used_sources = "\n".join(f"- {s}" for s in self.used_sources) if self.used_sources else "None yet."
-        judge_feedback_block = ""
-        if context.judge_feedback:
-            judge_feedback_block = (
-                f"Judge feedback on your previous round:\n{context.judge_feedback}\n"
-                "Improve based on this feedback. Do not repeat the same weaknesses."
-            )
-        return (
-            _DEBATER_PROMPT
-            .replace("{agent_name}", self.name)
-            .replace("{topic}", context.topic)
-            .replace("{round_number}", str(context.round_number))
-            .replace("{total_rounds}", str(total_rounds))
-            .replace("{stance}", self.stance.value)
-            .replace(
-                "{opponent_last_argument}",
-                context.opponent_last_argument or "No previous argument. Open with your strongest case.",
-            )
-            .replace("{your_previous_arguments}", prev_args)
-            .replace("{used_sources}", used_sources)
-            .replace("{debate_history}", debate_history)
-            .replace("{research_notes}", research_notes)
-            .replace("{judge_feedback_block}", judge_feedback_block)
-            .replace("{max_lines}", str(max_lines))
-            .replace("{max_words}", str(max_words))
+        return build_debater_prompt(
+            template=_DEBATER_PROMPT,
+            agent_name=self.name,
+            topic=context.topic,
+            round_number=context.round_number,
+            total_rounds=total_rounds,
+            stance=self.stance.value,
+            opponent_last_argument=context.opponent_last_argument,
+            previous_arguments=self.previous_arguments,
+            used_sources=self.used_sources,
+            debate_history=context.debate_history or [],
+            research_notes=self.research_notes or context.research or [],
+            judge_feedback=context.judge_feedback or "",
+            max_lines=max_lines,
+            max_words=max_words,
         )
 
     def _execute_skills(self, context: TurnContext) -> dict[str, SkillResult]:
@@ -115,99 +99,16 @@ class DebaterAgent(BaseAgent, ABC):
 
     def _validate_response(self, response: str) -> AgentResponse:
         text = self._sanitize_response(response)
-        penalties = []
-        word_count = _count_words(text)
-        if word_count > self.current_max_words:
-            penalties.append(
-                Penalty(
-                    type=PenaltyType.EXCEED_LINES,
-                    points=-5,
-                    reason=f"response exceeded {self.current_max_words} word limit ({word_count} words, URLs excluded)",
-                    agent=self.role.value,
-                )
-            )
-        if len(text.splitlines()) > self.current_max_lines:
-            penalties.append(
-                Penalty(
-                    type=PenaltyType.EXCEED_LINES,
-                    points=-5,
-                    reason="response exceeded the line limit",
-                    agent=self.role.value,
-                )
-            )
-        rep_penalty = self._check_repetition(text)
+        penalties = apply_limits(text, self.current_max_words, self.current_max_lines, self.role)
+        rep_penalty = check_repetition(text, self.previous_arguments, self.role.value)
         if rep_penalty:
             penalties.append(rep_penalty)
-        src_penalty = self._check_source_reuse(text)
+        src_penalty = check_source_reuse(text, self.used_sources, self.role.value)
         if src_penalty:
             penalties.append(src_penalty)
         self.previous_arguments.append(text)
-        self._extract_sources(text)
+        extract_sources(text, self.used_sources, self.known_sources)
         return AgentResponse.from_text(text, time_seconds=0, penalties=penalties)
-
-    def _check_repetition(self, text: str) -> Penalty | None:
-        """Detect if response reuses phrases from any prior argument via bigram overlap."""
-        if not self.previous_arguments:
-            return None
-        current_bigrams = set(zip(text.lower().split(), text.lower().split()[1:], strict=False))
-        if not current_bigrams:
-            return None
-        for prev in self.previous_arguments:
-            prev_bigrams = set(zip(prev.lower().split(), prev.lower().split()[1:], strict=False))
-            if not prev_bigrams:
-                continue
-            overlap = len(current_bigrams & prev_bigrams) / len(current_bigrams | prev_bigrams)
-            if overlap > _REPETITION_OVERLAP_THRESHOLD:
-                return Penalty(
-                    type=PenaltyType.REPETITION,
-                    points=PenaltyPoints.REPETITION.value,
-                    reason=f"argument bigram overlap {overlap:.0%} with a prior round",
-                    agent=self.role.value,
-                )
-        return None
-
-    def _extract_sources(self, text: str) -> None:
-        """Extract cited source names from response for reuse tracking."""
-        import re
-
-        for pattern in [r'"([^"]+)"', r"'([^']+)'"]:
-            for match in re.findall(pattern, text):
-                if len(match) > 4 and match not in self.used_sources:
-                    self.used_sources.append(match)
-        for word in text.split():
-            if word.startswith("http") and word not in self.used_sources:
-                self.used_sources.append(word)
-        for source in self.known_sources:
-            if source in text and source not in self.used_sources:
-                self.used_sources.append(source)
-        inline_names = re.findall(r'\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)\b', text)
-        for name in inline_names:
-            if len(name) > 5 and name not in self.used_sources:
-                self.used_sources.append(name)
-
-    def _check_source_reuse(self, text: str) -> Penalty | None:
-        """Penalize if a previously used citation appears again."""
-        for source in self.used_sources[:-1]:
-            if len(source) < 4:
-                continue
-            if source in text:
-                return Penalty(
-                    type=PenaltyType.REPETITION,
-                    points=PenaltyPoints.REPETITION.value,
-                    reason=f"reused citation: {source[:60]}",
-                    agent=self.role.value,
-                )
-            if len(source.split()) >= 2 and source.split()[0] in text:
-                short = source.split()[0]
-                prior_first_words = [s.split()[0] for s in self.used_sources[:-1] if len(s.split()) >= 2]
-                if short in prior_first_words and short not in ["The", "This", "According"]:
-                    return Penalty(
-                        type=PenaltyType.REPETITION,
-                        points=PenaltyPoints.REPETITION.value,
-                        reason=f"reused citation: {source[:60]}",
-                        agent=self.role.value,
-                    )
-        return None
 
     def _sanitize_response(self, response: str) -> str:
         text = response.strip()

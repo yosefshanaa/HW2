@@ -77,22 +77,17 @@ class ApiGatekeeper:
             self.sleeper(limit.retry_after_seconds)
 
     def _execute_with_retry(
-        self,
-        limit: ServiceRateLimit,
-        api_call: Callable[..., ResultT],
-        *args: Any,
-        **kwargs: Any,
+        self, limit: ServiceRateLimit, api_call: Callable[..., ResultT], *args: Any, **kwargs: Any
     ) -> ResultT:
-        attempts = 0
-        while True:
+        for attempts in range(limit.max_retries + 1):
             try:
                 return api_call(*args, **kwargs)
             except Exception:
-                attempts += 1
-                if attempts > limit.max_retries:
+                if attempts >= limit.max_retries:
                     self._log("ERROR", "api call failed")
                     raise
-                self.sleeper(limit.retry_after_seconds * (2 ** (attempts - 1)))
+                self.sleeper(limit.retry_after_seconds * (2**attempts))
+        raise RuntimeError("unreachable")
 
     def _finish(self, service: str, token: object | None) -> None:
         with self._lock:
@@ -133,18 +128,17 @@ class ApiGatekeeper:
         return self.rate_limits.get(service) or self.rate_limits[ServiceName.DEFAULT.value]
 
     def _new_queue(self) -> Queue[object]:
-        maxsize = self.queue_max_size
-        if maxsize is None:
-            maxsize = max(limit.requests_per_hour for limit in self.rate_limits.values())
+        maxsize = self.queue_max_size or max(
+            rl.requests_per_hour for rl in self.rate_limits.values()
+        )
         return Queue(maxsize=maxsize)
 
     def _prune(self, requests: list[float], now: float, window_seconds: int) -> None:
-        requests[:] = [
-            requested_at for requested_at in requests if now - requested_at < window_seconds
-        ]
+        requests[:] = [r for r in requests if now - r < window_seconds]
 
     def _log(self, level: str, message: str) -> None:
         if self.logger:
             self.logger(level, "GATEKEEPER", message)
+
 
 __all__ = ["ApiGatekeeper", "QueueFullError"]

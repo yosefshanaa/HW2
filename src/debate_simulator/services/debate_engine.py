@@ -1,11 +1,14 @@
-from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any
 
 from debate_simulator.hooks import HookRegistry
-from debate_simulator.models.agent import AgentResponse, TurnContext
-from debate_simulator.models.debate import DebateResult, Penalty, Round
-from debate_simulator.shared.constants import FallbackText, PenaltyPoints, PenaltyType
+from debate_simulator.models.agent import TurnContext
+from debate_simulator.models.debate import DebateResult, Round
+from debate_simulator.services.engine_helpers import (
+    build_result,
+    export_result,
+    is_shutdown_requested,
+    safe_turn,
+)
 
 
 class DebateEngine:
@@ -16,14 +19,14 @@ class DebateEngine:
         pro_agent: Any | None = None,
         con_agent: Any | None = None,
         judge_agent: Any | None = None,
-        results_path: str | Path = "results",
+        results_path: str = "results",
         hooks: HookRegistry | None = None,
     ) -> None:
         """Create a debate engine with optional injected agents."""
         self.pro_agent = pro_agent
         self.con_agent = con_agent
         self.judge_agent = judge_agent
-        self.results_path = Path(results_path)
+        self.results_path = results_path
         self.hooks = hooks or HookRegistry()
         self.rounds: list[Round] = []
 
@@ -39,62 +42,73 @@ class DebateEngine:
             if research:
                 research(topic)
 
-    def run_debate_pings(self, topic: str, pings: int, max_lines: int = 2, max_words: int = 90) -> list[Round]:
+    def run_debate_pings(
+        self, topic: str, pings: int, max_lines: int = 2, max_words: int = 90
+    ) -> list[Round]:
         """Run debate pings in Con to Pro to Judge order."""
         self.rounds = []
         debate_history: list[str] = []
         for round_number in range(1, pings + 1):
+            if is_shutdown_requested():
+                break
             self.hooks.emit("on_round_start", ping_num=round_number, topic=topic)
             metadata = {"max_lines": max_lines, "max_words": max_words, "total_rounds": pings}
-
-            con_context = TurnContext(
-                topic=topic,
-                round_number=round_number,
-                metadata=metadata,
-                debate_history=list(debate_history),
-                judge_feedback=self._last_feedback("con"),
+            con_ctx = self._con_context(topic, round_number, metadata, debate_history)
+            con_response = safe_turn(self.con_agent, con_ctx, "con", self.hooks)
+            pro_ctx = self._pro_context(
+                topic, round_number, con_response.text, metadata, debate_history
             )
-            if debate_history:
-                con_context.opponent_last_argument = self.rounds[-1].pro_argument
-
-            con_response = self._safe_turn(self.con_agent, con_context, "con")
-
-            pro_context = TurnContext(
-                topic=topic,
-                round_number=round_number,
-                opponent_last_argument=con_response.text,
-                metadata=metadata,
-                debate_history=list(debate_history),
-                judge_feedback=self._last_feedback("pro"),
-            )
-            pro_response = self._safe_turn(self.pro_agent, pro_context, "pro")
-
+            pro_response = safe_turn(self.pro_agent, pro_ctx, "pro", self.hooks)
             evaluation = self.judge_agent.observe_round(
-                round_number, pro_response.text, con_response.text,
+                round_number,
+                pro_response.text,
+                con_response.text,
                 debate_history=list(debate_history),
             )
             debate_history.append(
-                f"Round {round_number}:\n"
-                f"Con: {con_response.text}\n"
-                f"Pro: {pro_response.text}\n"
-                f"Judge->Con: {evaluation.con_notes}\n"
-                f"Judge->Pro: {evaluation.pro_notes}"
+                f"Round {round_number}:\nCon: {con_response.text}\nPro: {pro_response.text}\n"
+                f"Judge->Con: {evaluation.con_notes}\nJudge->Pro: {evaluation.pro_notes}"
             )
-            round_model = Round(
-                round_number=round_number,
-                con_argument=con_response.text,
-                pro_argument=pro_response.text,
-                judge_notes=evaluation,
-                penalties=[
-                    *con_response.penalties,
-                    *pro_response.penalties,
-                    *evaluation.con_penalties,
-                    *evaluation.pro_penalties,
-                ],
+            self.rounds.append(
+                Round(
+                    round_number=round_number,
+                    con_argument=con_response.text,
+                    pro_argument=pro_response.text,
+                    judge_notes=evaluation,
+                    penalties=[
+                        *con_response.penalties,
+                        *pro_response.penalties,
+                        *evaluation.con_penalties,
+                        *evaluation.pro_penalties,
+                    ],
+                )
             )
-            self.rounds.append(round_model)
-            self.hooks.emit("on_round_end", ping_num=round_number, round_model=round_model)
+            self.hooks.emit("on_round_end", ping_num=round_number, round_model=self.rounds[-1])
         return self.rounds
+
+    def _con_context(self, topic: str, rn: int, metadata: dict, history: list[str]) -> TurnContext:
+        ctx = TurnContext(
+            topic=topic,
+            round_number=rn,
+            metadata=metadata,
+            debate_history=list(history),
+            judge_feedback=self._last_feedback("con"),
+        )
+        if history:
+            ctx.opponent_last_argument = self.rounds[-1].pro_argument
+        return ctx
+
+    def _pro_context(
+        self, topic: str, rn: int, opp: str, metadata: dict, history: list[str]
+    ) -> TurnContext:
+        return TurnContext(
+            topic=topic,
+            round_number=rn,
+            opponent_last_argument=opp,
+            metadata=metadata,
+            debate_history=list(history),
+            judge_feedback=self._last_feedback("pro"),
+        )
 
     def _last_feedback(self, agent: str) -> str:
         if not self.rounds:
@@ -105,58 +119,25 @@ class DebateEngine:
 
     def run_final_scoring(self) -> tuple[dict[str, Any], str]:
         """Run final judge scoring. Penalties are tracked but do NOT reduce quality scores."""
-        scores = self.judge_agent.evaluate_debate(
-            [round_model.model_dump_json() for round_model in self.rounds]
-        )
-        for round_model in self.rounds:
-            for penalty in round_model.penalties:
-                score = scores.get(penalty.agent)
-                if score is None:
-                    continue
-                score.penalties_applied.append(penalty)
-                score.penalty_total += penalty.points
+        scores = self.judge_agent.evaluate_debate([r.model_dump_json() for r in self.rounds])
+        build_result("", self.rounds, scores, "", {})
         return scores, self.judge_agent.declare_winner(scores)
-
-    def export_results(self, result: DebateResult) -> Path:
-        """Export a debate result to JSON."""
-        self.results_path.mkdir(parents=True, exist_ok=True)
-        path = (
-            self.results_path
-            / f"{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}_{result.debate_id}.json"
-        )
-        path.write_text(result.model_dump_json(indent=2), encoding="utf-8")
-        return path
 
     def start_debate(self, topic: str, config: dict[str, Any] | None = None) -> DebateResult:
         """Run a complete debate and export the result."""
         self.initialize_agents()
         debate_config = config or {}
-        pings = int(debate_config.get("pings", 6))
+        pings = int(debate_config.get("pings", 10))
         max_lines = int(debate_config.get("max_lines", 2))
         max_words = int(debate_config.get("max_words", 90))
         self.hooks.emit("on_debate_start", topic=topic)
         self.run_research_phase(topic)
         rounds = self.run_debate_pings(topic, pings, max_lines=max_lines, max_words=max_words)
         scores, winner = self.run_final_scoring()
-        result = DebateResult(
-            topic=topic, rounds=rounds, final_scores=scores, winner=winner, config=debate_config
-        )
-        self.export_results(result)
+        result = build_result(topic, rounds, scores, winner, debate_config)
+        export_result(result, self.results_path)
         self.hooks.emit("on_debate_end", results=result)
         return result
-
-    def _safe_turn(self, agent: Any, context: TurnContext, agent_name: str) -> AgentResponse:
-        try:
-            return agent.run_turn(context)
-        except Exception as error:
-            penalty = Penalty(
-                type=PenaltyType.EXCEED_TIME,
-                points=PenaltyPoints.EXCEED_TIME.value,
-                reason=str(error),
-                agent=agent_name,
-            )
-            self.hooks.emit("on_penalty", agent=agent_name, penalty=penalty)
-            return AgentResponse.from_text(FallbackText.AGENT_CRASH.value, 0.0, [penalty])
 
 
 __all__ = ["DebateEngine"]

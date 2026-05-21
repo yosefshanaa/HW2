@@ -17,9 +17,7 @@ class TimeoutMixin:
         deadline = time.monotonic() + self.timeout_seconds
         result = operation()
         if time.monotonic() > deadline:
-            raise TimeoutError(
-                f"{operation.__qualname__} exceeded {self.timeout_seconds}s budget"
-            )
+            raise TimeoutError(f"{operation.__qualname__} exceeded {self.timeout_seconds}s budget")
         return result
 
 

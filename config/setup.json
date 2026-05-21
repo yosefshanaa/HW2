@@ -8,7 +8,7 @@
     "base_url_env": "OPENAI_BASE_URL"
   },
   "debate": {
-    "max_pings": 6,
+    "max_pings": 10,
     "agent_timeout_seconds": 60,
     "keepalive_interval_seconds": 10,
     "max_lines_per_response": 2,
