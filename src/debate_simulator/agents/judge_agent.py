@@ -1,3 +1,4 @@
+import random
 from pathlib import Path
 from typing import Any
 
@@ -60,6 +61,10 @@ class JudgeAgent(BaseAgent):
         con_pen = [p for p in penalties if isinstance(p, str)]
         pro_score = _clamp(float(data.get("pro_speaker_score", 70)))
         con_score = _clamp(float(data.get("con_speaker_score", 70)))
+        pro_score += random.uniform(-2.5, 2.5)
+        con_score += random.uniform(-2.5, 2.5)
+        pro_score = _clamp(pro_score)
+        con_score = _clamp(con_score)
         self._pro_round_scores.append(pro_score)
         self._con_round_scores.append(con_score)
         return RoundEvaluation(
