@@ -1,7 +1,7 @@
 from typing import Any
 
 from debate_simulator.hooks import HookRegistry
-from debate_simulator.models.agent import TurnContext
+from debate_simulator.models.agent import AgentResponse, TurnContext
 from debate_simulator.models.debate import DebateResult, Round
 from debate_simulator.services.engine_helpers import (
     build_result,
@@ -45,7 +45,7 @@ class DebateEngine:
     def run_debate_pings(
         self, topic: str, pings: int, max_lines: int = 2, max_words: int = 90
     ) -> list[Round]:
-        """Run debate pings in Con to Pro to Judge order."""
+        """Run debate pings alternating Con-first / Pro-first to reduce speaker-order bias."""
         self.rounds = []
         debate_history: list[str] = []
         for round_number in range(1, pings + 1):
@@ -54,11 +54,18 @@ class DebateEngine:
             self.hooks.emit("on_round_start", ping_num=round_number, topic=topic)
             metadata = {"max_lines": max_lines, "max_words": max_words, "total_rounds": pings}
             con_ctx = self._con_context(topic, round_number, metadata, debate_history)
-            con_response = safe_turn(self.con_agent, con_ctx, "con", self.hooks)
-            pro_ctx = self._pro_context(
-                topic, round_number, con_response.text, metadata, debate_history
-            )
-            pro_response = safe_turn(self.pro_agent, pro_ctx, "pro", self.hooks)
+            con_response = AgentResponse.from_text("", 0.0)
+            if round_number % 2 == 0:
+                pro_ctx = self._pro_context(topic, round_number, "", metadata, debate_history)
+                pro_response = safe_turn(self.pro_agent, pro_ctx, "pro", self.hooks)
+                con_ctx.opponent_last_argument = pro_response.text
+                con_response = safe_turn(self.con_agent, con_ctx, "con", self.hooks)
+            else:
+                con_response = safe_turn(self.con_agent, con_ctx, "con", self.hooks)
+                pro_ctx = self._pro_context(
+                    topic, round_number, con_response.text, metadata, debate_history
+                )
+                pro_response = safe_turn(self.pro_agent, pro_ctx, "pro", self.hooks)
             evaluation = self.judge_agent.observe_round(
                 round_number,
                 pro_response.text,

@@ -111,11 +111,16 @@ def map_penalties(agent: str, names: list[Any]) -> list[Penalty]:
 def build_round_prompt(
     template: str, round_number: int, pro_arg: str, con_arg: str, history: list[str] | None = None
 ) -> str:
-    """Render the judge round-evaluation prompt."""
+    """Render the judge round-evaluation prompt, alternating speaker order by round."""
     h = "\nDebate history (prior rounds):\n" + "\n".join(history[-4:]) + "\n" if history else ""
+    if round_number % 2 == 0:
+        first_name, first_arg, second_name, second_arg = "Pro", pro_arg, "Con", con_arg
+    else:
+        first_name, first_arg, second_name, second_arg = "Con", con_arg, "Pro", pro_arg
     return (
         f"{template}\n\n{h}Evaluate round {round_number}.\n"
-        f"Con speech:\n{con_arg}\n\nPro speech:\n{pro_arg}\n\n"
+        f"{first_name} speech:\n{first_arg}\n\n"
+        f"{second_name} speech:\n{second_arg}\n\n"
         'Return JSON only: {"con_notes":"...","pro_notes":"...",'
         '"pro_speaker_score":75,"con_speaker_score":70,'
         '"con_penalties":[],"pro_penalties":[]}.'
