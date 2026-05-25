@@ -489,6 +489,19 @@ ConAgent      ProAgent      JudgeAgent    ProcessMgr    FIFO
 - **Trade-offs**: +forces argument diversity, +prevents stance drift; -may over-penalize similar legitimate arguments, -adds computational overhead per turn
 - **Alternatives considered**: LLM-only repetition detection (unreliable), n-gram overlap (more complex), no enforcement (status quo)
 
+### ADR-012: Judge Bias Mitigation & Penalty Normalization
+- **Decision**: Make the judge side-agnostic and put penalties on the per-round scale
+- **Context**: Manual testing showed the Pro agent winning almost every debate. Root cause was an asymmetric scoring example in `build_round_prompt`: it hard-coded `pro_speaker_score:75, con_speaker_score:70` in the example JSON every round (the round-parity swap of order and value cancelled out), and the low-temperature judge LLM anchored to those numbers. A second bug: quality was averaged across rounds while penalties were summed, so penalties grew ~Nx and swamped quality (flipping the bias to "Con always wins"). Penalties were also applied twice and never reached `declare_winner`.
+- **Implementation**:
+  - `build_round_prompt` example uses EQUAL placeholder scores for both speakers (no anchor)
+  - Penalties averaged per round (`penalty_total / rounds`) and folded into `Score.total`
+  - Penalties applied exactly once in `run_final_scoring`; removed from `build_result`
+  - Removed the bogus range-midpoint "normalization" in `evaluate_debate`
+  - `declare_winner` compares penalty-adjusted totals using `ScoreDefault.TIE_MARGIN`
+  - Added `test_bias.py` to tally Pro/Con/Tie across N debates
+- **Trade-offs**: +eliminates systematic side bias, +penalties matter proportionally, +genuine non-determinism; -close debates depend on jitter, so reproducibility requires fixing a seed
+- **Alternatives considered**: re-introducing asymmetric anchors (rejected — caused the bug), penalty caps (less principled than per-round averaging), LLM-judge-only scoring with no jitter (too deterministic)
+
 ---
 
 ## 4. Detailed Module Design

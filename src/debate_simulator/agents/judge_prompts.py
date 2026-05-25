@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from debate_simulator.shared.constants import ContextWindow
+from debate_simulator.shared.constants import ContextWindow, ScoreDefault
 
 _DIMENSIONS = ["content", "style", "strategy"]
 
@@ -34,13 +34,21 @@ def build_round_prompt(
         first_name, first_arg, second_name, second_arg = "Con", con_arg, "Pro", pro_arg
     else:
         first_name, first_arg, second_name, second_arg = "Pro", pro_arg, "Con", con_arg
+    # Neutral, EQUAL example scores: the example must carry no signal about which
+    # side should score higher. Asymmetric example values anchor the LLM toward
+    # one side every round and systematically bias the verdict.
+    neutral = int(ScoreDefault.DEFAULT_SPEAKER_SCORE.value)
+    first_lo, second_lo = first_name.lower(), second_name.lower()
+    json_example = (
+        f'{{"{first_lo}_notes":"...","{second_lo}_notes":"...",'
+        f'"{first_lo}_speaker_score":{neutral},"{second_lo}_speaker_score":{neutral},'
+        f'"{first_lo}_penalties":[],"{second_lo}_penalties":[]}}'
+    )
     return (
         f"{template}\n\n{h}Evaluate round {round_number}.\n"
         f"{first_name} speech:\n{first_arg}\n\n"
         f"{second_name} speech:\n{second_arg}\n\n"
-        'Return JSON only: {"con_notes":"...","pro_notes":"...",'
-        '"pro_speaker_score":75,"con_speaker_score":70,'
-        '"con_penalties":[],"pro_penalties":[]}.'
+        f"Return JSON only: {json_example}."
     )
 
 

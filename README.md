@@ -158,7 +158,7 @@ CLI (main.py)
 - Each agent runs as a **separate process**
 - Agents communicate via **FIFO (named pipes)** using **JSON** protocol
 - Communication is **one-directional**: Sons → Father (judge only listens, never intervenes)
-- **Pro speaks first** in each ping, then Con responds
+- **Speaker order alternates** by round — Pro speaks first on odd pings, Con first on even pings — to neutralize speaker-order bias
 
 ### C4 Model
 
@@ -283,19 +283,45 @@ The judge evaluates each debater on 3 weighted dimensions (0-100% each):
 | **Style** | 30% | Clarity, structure, rhetorical technique |
 | **Strategy** | 30% | Rebuttal effectiveness, stance consistency |
 
-**Penalties** (deducted from final score):
+**Penalties** (affect the final score and therefore the winner):
 
 | Violation | Penalty |
 |-----------|---------|
-| Disrespectful language | -5% per occurrence |
-| Ignoring opponent's point | -10% per occurrence |
-| Contradicting own stance | -15% per occurrence |
-| Exceeding word limit | -5% per occurrence |
-| Exceeding line limit | -5% per occurrence |
-| Exceeding time limit | -10% per occurrence |
-| Repetition | -10% per occurrence |
+| Disrespectful language | -5 per occurrence |
+| Ignoring opponent's point | -10 per occurrence |
+| Contradicting own stance | -15 per occurrence |
+| Exceeding word limit | -5 per occurrence |
+| Exceeding line limit | -5 per occurrence |
+| Exceeding time limit | -10 per occurrence |
+| Repetition | -10 per occurrence |
 
-**Ties are valid** — the judge may declare a tie if both debaters perform equally well.
+Penalty points are **summed across all rounds and then averaged per round**, so they
+sit on the same per-round scale as the quality score. This lets a few infractions
+modify the verdict without swamping argument quality: a debater who repeats or runs
+long every round loses ground proportionally, but one stray penalty does not decide
+the debate. The penalty-adjusted total is what the judge compares to declare the winner.
+
+**Ties are valid** — the judge declares a tie when the two penalty-adjusted totals are
+within `ScoreDefault.TIE_MARGIN` (default 2.0, in `shared/constants.py`) of each other.
+
+### Fairness & Bias Mitigation
+
+The judge is engineered to avoid systematic favoritism toward either side:
+
+- **Neutral scoring example** — the JSON example shown to the judge LLM uses the *same*
+  placeholder score for both speakers. An earlier version showed Pro at 75 and Con at 70
+  in every round; the LLM anchored to those numbers and Pro won almost every debate.
+  The example now carries no signal about which side should score higher.
+- **Alternating speaker order** — Pro speaks first on odd rounds, Con first on even
+  rounds, so neither side gets a consistent primacy/recency advantage.
+- **Per-round penalty averaging** — penalties are normalized to the per-round scale (see
+  above) so they cannot mechanically dominate the quality contest.
+- **Per-round jitter** — a small random component is added to each round's speaker score
+  so genuinely close debates resolve non-deterministically (the same matchup can go
+  either way across runs), as required by the assignment.
+
+Run `python test_bias.py -n 20` to tally Pro/Con/Tie outcomes and confirm there is no
+systematic lean.
 
 ### Prompt Guardrails
 

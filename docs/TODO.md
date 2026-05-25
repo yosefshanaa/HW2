@@ -328,6 +328,32 @@ Issues identified from manual test: agents repeat arguments, Pro argues Con's po
 
 ---
 
+## Phase 16: Judge Bias Fix & Penalty Normalization
+
+Issue from manual testing: the **Pro agent won almost every debate**. Root cause was an
+asymmetric scoring example anchoring the judge LLM toward Pro every round, compounded by a
+penalty unit-mismatch (summed vs averaged) and penalties never reaching the winner decision.
+See PLAN ADR-012 and PRD_judge_evaluation §Bias Mitigation.
+
+| # | Task | Priority | Status | Depends On |
+|---|------|----------|--------|-----------|
+| 16.1 | Make `build_round_prompt` example use EQUAL placeholder scores (remove Pro=75/Con=70 anchor) | P0 | [x] | — |
+| 16.2 | Fold penalties into `Score.total`, averaged per round, in `run_final_scoring` | P0 | [x] | 16.1 |
+| 16.3 | `declare_winner` compares penalty-adjusted totals via `ScoreDefault.TIE_MARGIN` | P0 | [x] | 16.2 |
+| 16.4 | Remove bogus range-midpoint normalization in `evaluate_debate` | P0 | [x] | — |
+| 16.5 | Remove double penalty application (drop throwaway `build_result` in `run_final_scoring`; remove `apply_final_penalties` from `build_result`) | P0 | [x] | 16.2 |
+| 16.6 | Add `ScoreDefault.TIE_MARGIN` constant | P1 | [x] | 16.3 |
+| 16.7 | `test_bias.py` — tally Pro/Con/Tie across N debates | P0 | [x] | — |
+| 16.8 | Verify: `ruff check` 0 errors, `pytest` 145 passing | P0 | [x] | 16.1–16.6 |
+| 16.9 | E2E bias verification: `test_bias.py -n 20` shows no systematic lean | P0 | [~] | 16.7 |
+| 16.10 | (follow-up) Make judge spread quality scores more (reduce ~70 clustering) so quality, not jitter, drives close calls | P1 | [ ] | 16.9 |
+| 16.11 | (follow-up) Move `test_bias.py` under `tests/` or expose via SDK | P2 | [ ] | 16.7 |
+| 16.12 | (follow-up) Consider moving `TIE_MARGIN` to `config/setup.json` `scoring` section | P2 | [ ] | 16.6 |
+
+This also advances the previously-open non-determinism items: **10.4**, **10.10**, **14.10**.
+
+---
+
 ## Summary Statistics
 
 | Category | Count |

@@ -5,7 +5,6 @@ from typing import Any
 from debate_simulator.agents.base_agent import BaseAgent
 from debate_simulator.agents.judge_helpers import (
     average_round_scores,
-    detect_repetition,
     fallback_round_data,
     map_penalties,
 )
@@ -56,9 +55,6 @@ class JudgeAgent(BaseAgent):
         self._con_history.append(con_argument)
         pro_raw_pen = [p for p in data.get("pro_penalties", []) if isinstance(p, str)]
         con_raw_pen = [p for p in data.get("con_penalties", []) if isinstance(p, str)]
-        pro_rep, con_rep = detect_repetition(
-            pro_argument, con_argument, self._pro_history, self._con_history
-        )
         default_score = ScoreDefault.DEFAULT_SPEAKER_SCORE.value
         pro_score = _clamp(float(data.get("pro_speaker_score", default_score)))
         con_score = _clamp(float(data.get("con_speaker_score", default_score)))
@@ -70,22 +66,23 @@ class JudgeAgent(BaseAgent):
         return RoundEvaluation(
             pro_notes=str(data.get("pro_notes", "")),
             con_notes=str(data.get("con_notes", "")),
-            pro_penalties=map_penalties("pro", pro_raw_pen + pro_rep),
-            con_penalties=map_penalties("con", con_raw_pen + con_rep),
+            pro_penalties=map_penalties("pro", pro_raw_pen),
+            con_penalties=map_penalties("con", con_raw_pen),
             pro_speaker_score=pro_score,
             con_speaker_score=con_score,
             judge_message=None,
         )
 
     def evaluate_debate(self, transcript: list[str]) -> dict[str, Score]:
-        """Average per-round speaker scores into final quality scores (50-100 scale)."""
+        """Average per-round speaker scores into final quality scores."""
         return average_round_scores(self._pro_round_scores, self._con_round_scores)
 
     def declare_winner(self, scores: dict[str, Score]) -> str:
-        """Declare pro, con, or tie based on quality scores."""
-        if abs(scores["pro"].total - scores["con"].total) < 2.0:
+        """Declare pro, con, or tie. Totals already include averaged penalties."""
+        pro, con = scores["pro"].total, scores["con"].total
+        if abs(pro - con) < ScoreDefault.TIE_MARGIN.value:
             return "tie"
-        return "pro" if scores["pro"].total > scores["con"].total else "con"
+        return "pro" if pro > con else "con"
 
     def _build_prompt(self, context: TurnContext) -> str:
         return _JUDGE_PROMPT.replace("{topic}", context.topic)

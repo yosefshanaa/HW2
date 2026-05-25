@@ -72,8 +72,11 @@ def apply_final_penalties(rounds: list[Any], scores: dict[str, Any]) -> dict[str
 def build_result(
     topic: str, rounds: list[Any], scores: dict[str, Any], winner: str, config: dict[str, Any]
 ) -> DebateResult:
-    """Construct a DebateResult after applying penalties."""
-    apply_final_penalties(rounds, scores)
+    """Construct a DebateResult from already-penalized scores.
+
+    Penalties are applied once in DebateEngine.run_final_scoring (before the winner
+    is declared), so this constructor must not re-apply them.
+    """
     return DebateResult(
         topic=topic, rounds=rounds, final_scores=scores, winner=winner, config=config
     )

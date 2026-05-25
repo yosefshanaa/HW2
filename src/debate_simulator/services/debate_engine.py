@@ -4,6 +4,7 @@ from debate_simulator.hooks import HookRegistry
 from debate_simulator.models.agent import AgentResponse, TurnContext
 from debate_simulator.models.debate import DebateResult, Round
 from debate_simulator.services.engine_helpers import (
+    apply_final_penalties,
     build_result,
     export_result,
     is_shutdown_requested,
@@ -127,7 +128,13 @@ class DebateEngine:
 
     def run_final_scoring(self) -> tuple[dict[str, Any], str]:
         scores = self.judge_agent.evaluate_debate([r.model_dump_json() for r in self.rounds])
-        build_result("", self.rounds, scores, "", {})
+        apply_final_penalties(self.rounds, scores)
+        # Quality is averaged across rounds, so penalties must be too: dividing the
+        # summed penalty by the round count puts both on the same per-round scale.
+        # Otherwise summed penalties grow ~Nx and swamp argument quality entirely.
+        rounds_count = max(len(self.rounds), 1)
+        for score in scores.values():
+            score.total = max(score.total + score.penalty_total / rounds_count, 0.0)
         return scores, self.judge_agent.declare_winner(scores)
 
     def start_debate(self, topic: str, config: dict[str, Any] | None = None) -> DebateResult:

@@ -56,7 +56,8 @@ For each round, return:
 
 ## Important Rules
 - Observe only during debate. Do NOT coach or advise the debaters.
-- A tie is valid when quality is genuinely equal.
+- **SCORE FAIRLY**: Do not favor either side. Each speaker starts with equal potential. Score based ONLY on argument quality, not on speaker order, position (pro/con), or which side you personally agree with.
+- A tie is valid when quality is genuinely equal. Do not artificially create separation.
 - Penalize repetition: if an agent reuses the same claim, source, or phrasing from a prior round, flag REPETITION.
 - Track dropped arguments: if Agent A makes a claim and Agent B ignores it entirely, note this in feedback.
 - Output valid JSON only. Do NOT wrap in Markdown.
