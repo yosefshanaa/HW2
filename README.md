@@ -470,6 +470,8 @@ single LLM call. The remaining skills are reusable project mechanisms covered by
 
 Skills follow the **Router-Skill pattern**: read all descriptions → select relevant one → execute. Each skill directory contains `skill.md` (description) + `skill.py` (implementation).
 
+See [docs/PRD_skills.md](docs/PRD_skills.md) for the full skill-system PRD (Router-Skill pattern, per-agent ownership, the distinctive-skill-per-son mechanism, and the prompt-passthrough generation path).
+
 ---
 
 ## Development
