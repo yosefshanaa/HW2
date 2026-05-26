@@ -47,17 +47,22 @@ def main(argv: list[str] | None = None, sdk: Any | None = None) -> None:
     enable_graceful_shutdown()
     hooks = _build_live_hooks(console, args) if sdk is None else None
     debate_sdk = sdk or DebateSimulatorSDK(hooks=hooks, setup_path=args.config)
-    if args.list_topics:
-        print_topics(console, debate_sdk.list_topics())
-        return
-    topic = args.custom_topic or _topic_from_index(debate_sdk, args.topic)
-    config: dict[str, Any] = {}
-    if args.pings:
-        config["pings"] = args.pings
-    print_header(console, topic)
-    result = debate_sdk.start_debate(topic, config=config)
-    if hooks is None:
-        print_result(console, result)
+    owns_sdk = sdk is None
+    try:
+        if args.list_topics:
+            print_topics(console, debate_sdk.list_topics())
+            return
+        topic = args.custom_topic or _topic_from_index(debate_sdk, args.topic)
+        config: dict[str, Any] = {}
+        if args.pings:
+            config["pings"] = args.pings
+        print_header(console, topic)
+        result = debate_sdk.start_debate(topic, config=config)
+        if hooks is None:
+            print_result(console, result)
+    finally:
+        if owns_sdk:
+            debate_sdk.close()
 
 
 def _build_live_hooks(console: Any, args: Any) -> HookRegistry:

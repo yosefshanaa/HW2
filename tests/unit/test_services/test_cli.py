@@ -27,6 +27,9 @@ class FakeSdk:
         self.started.append(topic)
         return type("Result", (), {"topic": topic, "winner": "pro", "rounds": [FakeRound()]})()
 
+    def close(self) -> None:
+        """Match the real SDK's cleanup interface (no-op for the double)."""
+
 
 def test_cli_parser_accepts_expected_flags() -> None:
     """CLI parser accepts the required public flags."""

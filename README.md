@@ -140,6 +140,7 @@ Live terminal output:
 | Judge is not a domain expert | Judge prompt evaluates debate technique, not topic truth |
 | Respectful debate and stance control | Prompt rules plus penalties for disrespect, ignored rebuttal, stance contradiction, repetition |
 | Time/process blocking | `ProcessManager.run_with_timeout()` kills timed-out turns and records penalties |
+| No orphan agents (clean termination) | Turn subprocesses are killed + joined; the background log consumer is a daemon thread stopped via `SDK.close()` / context manager (`main.py` cleans up in a `finally`) |
 | SDK layer | CLI delegates to `DebateSimulatorSDK`; business logic stays below SDK |
 | Configurable runtime | CLI `--config` is passed into the SDK settings loader |
 | Logs | FIFO logger, background consumer, 20 rotating files, 500 lines each |
@@ -216,7 +217,8 @@ CLI (main.py)
 
 ### Agent Communication And Process Control
 
-- Debater turns execute through `ProcessManager` subprocess timeouts; stuck children are killed and penalized.
+- Debater turns execute through `ProcessManager` subprocess timeouts; stuck children are killed and joined (reaped), so no agent process is left orphaned.
+- The SDK is closeable (`SDK.close()` / `with DebateSimulatorSDK() as sdk:`); the background log-consumer thread is stopped on shutdown, including on error/interrupt, so all processes terminate cleanly.
 - Structured payloads are Pydantic/JSON-compatible models (`TurnContext`, `AgentResponse`, `Round`, `DebateResult`).
 - The Father mediates opponent messages: child output is relayed as Father-provided context to the next child, not as direct child-to-child conversation.
 - **Orchestration is a service, not the Judge object.** The three agents (`Pro`, `Con`, `Judge`) are peers; a dedicated `DebateEngine` service owns the loop and routes every message through the Father relay (`father_relay`). This is the lecture's recommended "main process manages the three processes" design — the sons are *supervised by* the Father's mediation, but are not spawned as black-box sub-agents of the `JudgeAgent`. Separating orchestration from judging keeps the Judge focused on scoring and the flow independently testable.
@@ -635,18 +637,18 @@ Last verified on 2026-05-26:
 | Check | Result |
 |-------|--------|
 | `uv run ruff check src tests main.py main_display.py` | 0 errors |
-| `uv run pytest` | 154 passed, 1 skipped |
-| `uv run pytest --cov --cov-report=term-missing` | 92.02% total coverage |
+| `uv run pytest` | 156 passed, 1 skipped |
+| `uv run pytest --cov --cov-report=term-missing` | 92.06% total coverage |
 | `timeout 180s uv run python main.py --topic 1 --pings 1` | Completed; Con won 81.8% vs Pro 73.4% |
 | Running background jobs | None after verification |
 
-**`uv run pytest` — 154 passed, 1 skipped:**
+**`uv run pytest` — 156 passed, 1 skipped:**
 
-![pytest output showing 154 passed, 1 skipped](assets/screenshot_tests_passing.png)
+![pytest output showing 156 passed, 1 skipped](assets/screenshot_tests_passing.png)
 
-**`uv run pytest --cov --cov-report=term-missing` — 92.02% total coverage:**
+**`uv run pytest --cov --cov-report=term-missing` — 92.06% total coverage:**
 
-![Coverage report showing 92.02% total coverage above the 85% threshold](assets/screenshot_coverage.png)
+![Coverage report showing 92.06% total coverage above the 85% threshold](assets/screenshot_coverage.png)
 
 ---
 

@@ -49,6 +49,20 @@ class DebateSimulatorSDK:
         result_path = self.results_path / f"{debate_id}.json"
         return json.loads(result_path.read_text(encoding="utf-8"))
 
+    def close(self) -> None:
+        """Stop the background log consumer so no agent/thread is left orphaned."""
+        if self._log_consumer is not None:
+            self._log_consumer.stop()
+            self._log_consumer = None
+
+    def __enter__(self) -> "DebateSimulatorSDK":
+        """Enter the SDK context."""
+        return self
+
+    def __exit__(self, *exc: Any) -> None:
+        """Guarantee cleanup on context exit, including on error."""
+        self.close()
+
     def _build_default_engine(self) -> DebateEngine:
         settings = load_settings(setup_path=self.setup_path)
         api_key = settings.require_openai_api_key()
