@@ -606,7 +606,7 @@ This project was developed as an academic exercise for the course by Dr. Yoram S
 
 ### Credits
 
-- **Developed by**: Yosef Shanaa
+- **Developed by**: Yosef Shanaa and Ahmed Kais
 - **Course**: Dr. Yoram Segal — Agents, Subagents, Commands and Skills
 - **Framework**: Python, OpenAI API, DuckDuckGo Search, ChromaDB, Sentence-Transformers
 - **Package Manager**: UV

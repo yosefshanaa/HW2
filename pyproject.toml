@@ -4,7 +4,8 @@ version = "1.00"
 description = "Terminal SDK for AI court debate simulations."
 readme = "README.md"
 authors = [
-    { name = "yosefshanaa", email = "yosefshanaa@gmail.com" }
+    { name = "yosefshanaa", email = "yosefshanaa@gmail.com" },
+    { name = "Ahmed Kais" }
 ]
 requires-python = ">=3.10"
 dependencies = [
