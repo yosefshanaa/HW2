@@ -23,15 +23,18 @@ Summing raw penalties (as a prior version did) makes them grow ~Nx and completel
 argument quality — a debater with a couple more infractions then loses regardless of how
 well they argued.
 
-### Ties
-A tie is declared when the two penalty-adjusted totals are within `scoring.tie_margin`
-(default 2.0, `ScoreDefault.TIE_MARGIN`) of each other.
+### Decisive Verdict
+The Father must return `pro` or `con`; exported ties are invalid. If totals are exactly
+equal, the implementation breaks the deadlock without a fixed side preference.
 
 ## Penalty Handling
 Penalties DO affect the final score and therefore the winner (see Final Score). They are
 applied exactly once, in `DebateEngine.run_final_scoring`, before the winner is declared;
 `build_result` no longer re-applies them. Penalties include: disrespect, ignore_rebuttal,
 stance_contradiction, exceed_words, exceed_lines, exceed_time, repetition.
+Penalty names returned by the judge LLM are normalized case-insensitively before mapping
+to typed penalties, so prompt wording like `stance_contradiction` and legacy uppercase
+outputs both produce the same penalty object.
 
 ## Bias Mitigation (why Pro no longer always wins)
 - **Neutral scoring example**: `build_round_prompt` shows the judge LLM an example JSON
@@ -50,7 +53,7 @@ stance_contradiction, exceed_words, exceed_lines, exceed_time, repetition.
 ## Interface
 - `JudgeAgent.observe_round(round_number, pro_argument, con_argument, debate_history=None) -> RoundEvaluation` (includes per-round speaker scores)
 - `JudgeAgent.evaluate_debate(transcript) -> dict[str, Score]` (averages per-round scores)
-- `JudgeAgent.declare_winner(scores) -> str`
+- `JudgeAgent.declare_winner(scores) -> str` (`"pro"` or `"con"`)
 
 ## Acceptance
-- Integration tests verify Father non-intervention, per-round scoring, ties, penalty tracking, and stance verification.
+- Integration tests verify Father mediation, per-round scoring, decisive winner validation, penalty tracking, and stance verification.

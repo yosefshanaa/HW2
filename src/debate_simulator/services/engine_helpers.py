@@ -10,9 +10,16 @@ from typing import Any
 
 from debate_simulator.models.agent import AgentResponse, TurnContext
 from debate_simulator.models.debate import DebateResult, Penalty
-from debate_simulator.shared.constants import FallbackText, PenaltyPoints, PenaltyType
+from debate_simulator.shared.constants import ConfigFile, FallbackText, PenaltyPoints, PenaltyType
 
 _graceful_shutdown = False
+_DEBATE_FALLBACKS = {
+    "max_pings": 10,
+    "agent_timeout_seconds": 60,
+    "keepalive_interval_seconds": 10,
+    "max_lines_per_response": 2,
+    "max_words_per_response": 90,
+}
 
 
 def enable_graceful_shutdown() -> None:
@@ -31,10 +38,35 @@ def is_shutdown_requested() -> bool:
     return _graceful_shutdown
 
 
-def safe_turn(agent: Any, context: TurnContext, agent_name: str, hooks: Any) -> AgentResponse:
+_STATE_ATTRS = (
+    "memory",
+    "last_skill_results",
+    "previous_arguments",
+    "used_sources",
+    "known_sources",
+    "research_notes",
+)
+
+
+def safe_turn(
+    agent: Any, context: TurnContext, agent_name: str, hooks: Any, process_manager: Any = None
+) -> AgentResponse:
     """Run an agent turn, catching errors and applying timeout penalties."""
     try:
-        return agent.run_turn(context)
+        if process_manager is None:
+            response = agent.run_turn(context)
+        else:
+            result = process_manager.run_with_timeout(
+                lambda: _run_turn_with_state(agent, context), agent_name
+            )
+            if isinstance(result, AgentResponse):
+                response = result
+            else:
+                response, state = result
+                _restore_agent_state(agent, state)
+        for penalty in response.penalties:
+            hooks.emit("on_penalty", agent=agent_name, penalty=penalty)
+        return response
     except Exception as error:
         penalty = Penalty(
             type=PenaltyType.EXCEED_TIME,
@@ -44,6 +76,36 @@ def safe_turn(agent: Any, context: TurnContext, agent_name: str, hooks: Any) -> 
         )
         hooks.emit("on_penalty", agent=agent_name, penalty=penalty)
         return AgentResponse.from_text(FallbackText.AGENT_CRASH.value, 0.0, [penalty])
+
+
+def father_relay(speaker: str, text: str) -> str:
+    """Wrap a child message as a Father-mediated relay."""
+    return f"Father relay from {speaker}: {text}"
+
+
+def load_debate_defaults() -> dict[str, Any]:
+    """Read debate defaults from the versioned setup config."""
+    import json
+
+    try:
+        data = json.loads(Path(ConfigFile.SETUP.value).read_text(encoding="utf-8")).get("debate", {})
+        return {**_DEBATE_FALLBACKS, **data}
+    except (FileNotFoundError, ValueError, KeyError):
+        return _DEBATE_FALLBACKS.copy()
+
+
+def _run_turn_with_state(agent: Any, context: TurnContext) -> tuple[AgentResponse, dict[str, Any]]:
+    response = agent.run_turn(context)
+    return response, _snapshot_agent_state(agent)
+
+
+def _snapshot_agent_state(agent: Any) -> dict[str, Any]:
+    return {attr: getattr(agent, attr) for attr in _STATE_ATTRS if hasattr(agent, attr)}
+
+
+def _restore_agent_state(agent: Any, state: dict[str, Any]) -> None:
+    for attr, value in state.items():
+        setattr(agent, attr, value)
 
 
 def export_result(result: DebateResult, results_path: str | Path) -> Path:
@@ -77,16 +139,7 @@ def build_result(
     Penalties are applied once in DebateEngine.run_final_scoring (before the winner
     is declared), so this constructor must not re-apply them.
     """
-    return DebateResult(
-        topic=topic, rounds=rounds, final_scores=scores, winner=winner, config=config
-    )
+    return DebateResult(topic=topic, rounds=rounds, final_scores=scores, winner=winner, config=config)
 
 
-__all__ = [
-    "apply_final_penalties",
-    "build_result",
-    "enable_graceful_shutdown",
-    "export_result",
-    "is_shutdown_requested",
-    "safe_turn",
-]
+__all__ = ["apply_final_penalties", "build_result", "enable_graceful_shutdown", "export_result", "father_relay", "is_shutdown_requested", "load_debate_defaults", "safe_turn"]

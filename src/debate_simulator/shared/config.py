@@ -58,6 +58,12 @@ class LoggingConfig(BaseModel):
     log_level: str
 
 
+class ScoringConfig(BaseModel):
+    """Scoring weights for final quality totals."""
+
+    weights: dict[str, float]
+
+
 class SetupConfig(BaseModel):
     """Main application configuration."""
 
@@ -68,7 +74,7 @@ class SetupConfig(BaseModel):
     rag: RagConfig
     logging: LoggingConfig
     penalties: dict[str, int]
-    scoring: dict[str, dict[str, float]]
+    scoring: ScoringConfig
 
 
 class ServiceRateLimit(BaseModel):

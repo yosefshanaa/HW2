@@ -96,7 +96,6 @@ class ScoreDefault(float, Enum):
     DEFAULT_TOTAL = 60.0
     DEFAULT_SPEAKER_SCORE = 70.0
     JITTER_RANGE = 2.5
-    TIE_MARGIN = 2.0
 
 
 class RepetitionThreshold(float, Enum):

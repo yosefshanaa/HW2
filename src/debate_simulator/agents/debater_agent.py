@@ -70,7 +70,7 @@ class DebaterAgent(BaseAgent, ABC):
 
     def _build_prompt(self, context: TurnContext) -> str:
         max_lines = int(context.metadata.get("max_lines", 2))
-        total_rounds = int(context.metadata.get("total_rounds", 6))
+        total_rounds = int(context.metadata.get("total_rounds", 10))
         max_words = int(context.metadata.get("max_words", _WORD_COUNT_PENALTY_THRESHOLD))
         self.current_max_lines = max_lines
         self.current_max_words = max_words

@@ -32,6 +32,23 @@ class JudgeAgent(BaseAgent):
         self._con_history: list[str] = []
         self._pro_round_scores: list[float] = []
         self._con_round_scores: list[float] = []
+        self.rubric_notes: list[str] = []
+
+    def research(self, topic: str) -> list[str]:
+        """Search for debate judging criteria without researching the debate topic."""
+        if "web_search" not in self.skills:
+            return self.rubric_notes
+        result = self.skills["web_search"].execute(
+            {"query": "competitive debate judging criteria claim warrant impact rebuttal"}
+        )
+        if not result.success:
+            self.rubric_notes.append(f"Judge rubric search unavailable: {result.error}")
+            return self.rubric_notes
+        for item in result.data.get("results", [])[:3]:
+            title = getattr(item, "title", "")
+            snippet = getattr(item, "snippet", "")
+            self.rubric_notes.append(f"{title}: {snippet}")
+        return self.rubric_notes
 
     def observe_round(
         self,
@@ -45,7 +62,7 @@ class JudgeAgent(BaseAgent):
             data = parse_json_response(
                 self.llm_client.complete(
                     build_round_prompt(
-                        _JUDGE_PROMPT, round_number, pro_argument, con_argument, debate_history
+                        self._template(), round_number, pro_argument, con_argument, debate_history
                     )
                 )
             )
@@ -78,14 +95,14 @@ class JudgeAgent(BaseAgent):
         return average_round_scores(self._pro_round_scores, self._con_round_scores)
 
     def declare_winner(self, scores: dict[str, Score]) -> str:
-        """Declare pro, con, or tie. Totals already include averaged penalties."""
+        """Declare a decisive winner. Totals already include averaged penalties."""
         pro, con = scores["pro"].total, scores["con"].total
-        if abs(pro - con) < ScoreDefault.TIE_MARGIN.value:
-            return "tie"
+        if pro == con:
+            return random.choice(["pro", "con"])
         return "pro" if pro > con else "con"
 
     def _build_prompt(self, context: TurnContext) -> str:
-        return _JUDGE_PROMPT.replace("{topic}", context.topic)
+        return self._template().replace("{topic}", context.topic)
 
     def _execute_skills(self, context: TurnContext) -> dict[str, SkillResult]:
         return {}
@@ -97,10 +114,17 @@ class JudgeAgent(BaseAgent):
         return AgentResponse.from_text(response, time_seconds=0)
 
     def _final_prompt(self, transcript: list[str]) -> str:
-        return build_final_prompt(_JUDGE_PROMPT, transcript)
+        return build_final_prompt(self._template(), transcript)
 
     def _fallback_scores(self, transcript: list[str]) -> dict[str, Score]:
         return average_round_scores(self._pro_round_scores, self._con_round_scores)
+
+    def _template(self) -> str:
+        if not self.rubric_notes:
+            return _JUDGE_PROMPT
+        return _JUDGE_PROMPT + "\n\nInternet-derived judging criteria:\n" + "\n".join(
+            self.rubric_notes
+        )
 
 
 def _clamp(score: float) -> float:

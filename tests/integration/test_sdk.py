@@ -35,8 +35,8 @@ class Judge:
         return {}
 
     def declare_winner(self, scores):
-        """Return tie."""
-        return "tie"
+        """Return a decisive winner."""
+        return "pro"
 
 
 def test_sdk_to_engine_chain(tmp_path: Path) -> None:
@@ -46,4 +46,4 @@ def test_sdk_to_engine_chain(tmp_path: Path) -> None:
 
     result = sdk.start_debate("AI", {"pings": 1})
 
-    assert result.winner == "tie"
+    assert result.winner == "pro"

@@ -33,14 +33,14 @@ def test_judge_pro_penalties_not_discarded() -> None:
     assert hasattr(evaluation, "pro_penalties")
 
 
-def test_judge_declares_tie_for_equal_scores() -> None:
-    """Judge winner declaration allows ties."""
+def test_judge_declares_decisive_winner_for_equal_scores() -> None:
+    """Judge winner declaration never exports ties."""
     judge = JudgeAgent(name="father", llm_client=FakeLlm())
     score = Score(total=70.0, breakdown={}, penalties_applied=[])
 
     winner = judge.declare_winner({"pro": score, "con": score})
 
-    assert winner == "tie"
+    assert winner in {"pro", "con"}
 
 
 def test_judge_service_delegates_observe_and_score() -> None:

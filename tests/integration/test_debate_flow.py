@@ -44,12 +44,12 @@ class Judge:
         return RoundEvaluation(judge_message=None)
 
     def evaluate_debate(self, transcript):
-        """Return tied scores."""
+        """Return close scores."""
         return {}
 
     def declare_winner(self, scores):
-        """Return tie."""
-        return "tie"
+        """Return a decisive winner."""
+        return "con"
 
 
 def test_full_mocked_debate_exports_json(tmp_path: Path) -> None:
@@ -61,8 +61,8 @@ def test_full_mocked_debate_exports_json(tmp_path: Path) -> None:
     assert len(result.rounds) == 2 and len(list(tmp_path.glob("*.json"))) == 1
 
 
-def test_con_speaks_first_and_father_does_not_intervene(tmp_path: Path) -> None:
-    """Con speaks first and judge never sends a debate message back."""
+def test_father_observes_without_coaching(tmp_path: Path) -> None:
+    """Judge observes and never sends a coaching message back."""
     judge = Judge()
     engine = DebateEngine(Debater("pro"), Debater("con"), judge, results_path=tmp_path)
 
@@ -71,14 +71,14 @@ def test_con_speaks_first_and_father_does_not_intervene(tmp_path: Path) -> None:
     assert judge.observed == [("con", "pro")] and rounds[0].judge_notes.judge_message is None
 
 
-def test_penalty_and_tie_paths() -> None:
-    """Penalties affect scores and equal totals produce a tie."""
+def test_penalty_and_decisive_winner_paths() -> None:
+    """Penalties affect scores and equal totals still produce a winner."""
     service = ScoringService({"compliance": 1.0})
     penalty = Penalty(type=PenaltyType.EXCEED_LINES, points=-5, reason="long", agent="pro")
 
     score = service.compute_score({"compliance": 90}, [penalty])
 
-    assert score.total == 85 and service.determine_winner(85, 85) == "tie"
+    assert score.total == 85 and service.determine_winner(85, 85) in {"pro", "con"}
 
 
 def test_timeout_records_penalty() -> None:

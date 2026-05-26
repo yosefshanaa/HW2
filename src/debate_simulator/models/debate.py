@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from typing import Any
 from uuid import uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from debate_simulator.shared.constants import PenaltyType
 from debate_simulator.shared.version import VERSION
@@ -61,6 +61,14 @@ class DebateResult(BaseModel):
     final_scores: dict[str, Score]
     winner: str
     token_usage: dict[str, float] = Field(default_factory=dict)
+
+    @field_validator("winner")
+    @classmethod
+    def winner_must_be_decisive(cls, value: str) -> str:
+        """Require the Father judge to select one side."""
+        if value not in {"pro", "con"}:
+            raise ValueError("winner must be pro or con")
+        return value
 
 
 __all__ = ["DebateResult", "Penalty", "Round", "RoundEvaluation", "Score"]

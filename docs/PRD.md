@@ -13,7 +13,7 @@ The judge is **not a domain expert** — he evaluates based on **argumentation q
 | Role | Description |
 |------|-------------|
 | **Professor / Evaluator** | Runs the system, supplies API key via `.env`, grades per checklist |
-| **Judge Agent (Father)** | Listens to debate, evaluates rounds, scores each debater, declares winner/tie |
+| **Judge Agent (Father)** | Listens to debate, evaluates rounds, scores each debater, declares a decisive winner |
 | **Pro Agent (Son 1)** | Argues in favor of the given topic |
 | **Con Agent (Son 2)** | Argues against the given topic |
 
@@ -36,9 +36,9 @@ The judge is **not a domain expert** — he evaluates based on **argumentation q
   - Exceeding time, line, or word limits
   - Repeating arguments from earlier rounds
   - Failing to advance the debate with new content
-- After all rounds: assigns a **score (%)** to each debater and declares a winner (**or tie** — ties are valid)
+- After all rounds: assigns a **score (%)** to each debater and declares a winner (`pro` or `con`; ties are not exported)
 - Outputs full scoring breakdown as JSON
-- **Communication is one-directional**: Sons → Father (Father does not communicate back to sons during debate)
+- **Communication is Father-mediated**: a son's argument is relayed by the Father as context for the other son, without coaching
 
 #### 3.1.2 Debater Agents (Sons)
 - Each debater is **randomly assigned** a stance: **Pro** or **Con** (they do not choose)
@@ -46,7 +46,7 @@ The judge is **not a domain expert** — he evaluates based on **argumentation q
 - Each debater **must maintain their assigned stance** — Pro argues FOR the resolution, Con argues AGAINST it. Stance contradiction results in a -15 penalty
 - During each round, the debater **must reply to the opponent's previous argument** — not ignore it
 - Each debater must **introduce at least one new argument or angle per round** — repeating prior rounds results in a -10 penalty
-- Each debater has a configurable **line limit** (default 2) and **word limit** (default 60) per response
+- Each debater has a configurable **line limit** (default 2) and **word limit** (default 90) per response
 - Each debater has a configurable **time limit** per turn
 - If a debater's response contradicts their assigned stance, the judge penalizes them
 - Debaters must maintain a **respectful tone** — politically correct, no racism, no ad hominem
@@ -77,28 +77,28 @@ The judge is **not a domain expert** — he evaluates based on **argumentation q
 
 ```
 1. User selects topic (or provides custom topic) via CLI
-2. System initializes 3 agents (Judge + 2 Debaters) as separate processes
+2. System initializes 3 agents (Judge + 2 Debaters); debater turns run through subprocess timeout control
 3. Judge fetches debate judging criteria from internet (search)
 4. Both debaters perform internet research on the topic in parallel
-5. Debate begins — 6 Pings (rounds), each side speaks once per ping:
+5. Debate begins — 10 Pings (rounds), each side speaks once per ping:
    Ping N:
       a. Con Agent presents argument/rebuttal — timed (timeout enforced)
       b. Pro Agent responds to Con's argument — timed (timeout enforced)
       c. Judge observes and takes notes (does NOT intervene)
-6. After 6 pings:
+6. After 10 pings:
    a. Judge reviews full debate transcript (JSON)
    b. Judge scores each debater on multiple criteria (see §3.6)
-   c. Judge declares winner OR TIE
+   c. Judge declares a decisive winner
    d. Full results exported as JSON to results/
 ```
 
-**Critical rule**: The Father does NOT intervene in the debate. He only listens, takes notes, and delivers the final verdict. Communication is: Sons → Father (one direction).
+**Critical rule**: The Father mediates the conversation but does not coach the debaters. Child output is relayed through the Father as the next child's opponent context, and the Father delivers the final verdict.
 
 ### 3.4 Blocking & Time Governance
 
 | Parameter | Default | Configurable | Description |
 |-----------|---------|-------------|-------------|
-| `max_pings` | 6 | Yes | Number of debate pings (rounds) |
+| `max_pings` | 10 | Yes | Number of debate pings (rounds) |
 | `agent_timeout` | 60s | Yes | Max time per agent turn before process kill |
 | `keepalive_interval` | 10s | Yes | Watchdog keep-alive ping interval |
 | `max_lines_per_response` | 2 | Yes | Max lines per agent response |
@@ -150,7 +150,7 @@ The judge evaluates each debater per round on a **50-100 speaker score scale**, 
 - Repeating arguments from earlier rounds: tracked
 - Failing to advance the debate with new content: tracked
 
-**Ties are valid** — not every debate needs a clear winner. The judge may declare a tie.
+**No exported ties** — the Father must choose `pro` or `con`. Exact score equality is broken without a fixed side preference.
 
 See also: `docs/PRD_judge_evaluation.md`
 
@@ -247,7 +247,7 @@ See also: `docs/PRD_judge_evaluation.md`
 | AC-02 | 10 pings completed per debate | 10 JSON ping entries in output | `pings` array length == 10 |
 | AC-03 | Each agent respects timeout | 0 uncontrolled hangs | Every agent turn completes within `agent_timeout` or is killed + penalized |
 | AC-04 | Debaters reply to opponent's previous point | Penalty rate < 2 per debate | `rebuttal_check` flags <= 1 ignored rebuttal per agent |
-| AC-05 | Non-deterministic results | Different winners across runs | Same topic run 3x produces >= 2 different winners or 1 tie |
+| AC-05 | Non-deterministic results | Different winners across runs | Same topic run repeatedly can produce both Pro and Con wins |
 | AC-06 | JSON output validity | Parseable JSON | `results/*.json` passes JSON schema validation |
 | AC-07 | Score breakdown completeness | 5 dimensions scored per debater | Each `final_scores` entry has all 5 weighted dimensions |
 | AC-08 | Logging pipeline | 20 files × 500 lines | `logs/log_*.log` has exactly 20 files, none exceeding 500 lines |
@@ -255,17 +255,17 @@ See also: `docs/PRD_judge_evaluation.md`
 | AC-10 | Test coverage | >= 85% | `pytest --cov` reports >= 85% statement + branch coverage |
 | AC-11 | Linter | 0 errors | `ruff check` exits with code 0 |
 | AC-12 | Session cleanup | No stale data after debate | RAG store and session context are empty after FINISHED |
-| AC-13 | Father does not intervene | Zero bidirectional messages | Judge never sends messages to sons during debate pings |
-| AC-14 | Ties are possible | Judge can output "tie" | `winner` field can be `"tie"` |
+| AC-13 | Father-mediated debate | No direct child-to-child context | Opponent arguments are relayed as Father-provided context |
+| AC-14 | Decisive verdict | No exported ties | `winner` field is `"pro"` or `"con"` |
 | AC-15 | No hardcoded constants | All from config/env | Zero literal values for URLs, timeouts, API keys in source code |
 
 ### 3.14 IPC & Communication
 
 - Agents communicate via **Inter-Process Communication (IPC)**
 - Communication protocol: **JSON** (JSONL format for streaming)
-- Each agent runs as a separate **process**
-- IPC mechanisms used: **FIFO (named pipes)**, **Signals**, **Queues**
-- Father receives debate data from sons in one direction: Sons → Father
+- Debater turns are isolated through subprocess execution and timeout control.
+- IPC mechanisms used by the project include **FIFO (named pipes)** for logging and JSON-capable process queues for timed agent turns.
+- Father mediates debate context: child output is relayed through the Father before the next child receives it.
 
 ---
 
@@ -347,8 +347,8 @@ See also: `docs/PRD_api_gatekeeper.md`
 
 ### 4.6 Process Management
 
-- Each agent runs in its own **subprocess** (multiprocessing)
-- **Timeout** on every agent — if exceeded, process is killed
+- Debater turns run in isolated **subprocesses** (multiprocessing)
+- **Timeout** on every debater turn — if exceeded, process is killed
 - **Watchdog** mechanism with keep-alive pings to detect stuck agents
 - On kill: log the event, record a penalty, use a fallback response
 

@@ -38,13 +38,13 @@ class FakeJudge:
         return RoundEvaluation(pro_notes="pro", con_notes="con", judge_message=None)
 
     def evaluate_debate(self, transcript):
-        """Return tied scores."""
+        """Return close scores."""
         score = Score(total=50, breakdown={}, penalties_applied=[])
         return {"pro": score, "con": score}
 
     def declare_winner(self, scores):
-        """Return tie."""
-        return "tie"
+        """Return a decisive winner."""
+        return "pro"
 
 
 def test_debate_engine_runs_con_then_pro_then_judge(tmp_path: Path) -> None:
@@ -70,4 +70,4 @@ def test_debate_engine_exports_result_json(tmp_path: Path) -> None:
 
     result = engine.start_debate("AI", config={"pings": 1})
 
-    assert result.winner == "tie" and len(list(tmp_path.glob("*.json"))) == 1
+    assert result.winner == "pro" and len(list(tmp_path.glob("*.json"))) == 1

@@ -4,6 +4,7 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
+from debate_simulator.infrastructure.logging.fifo_support import ensure_fifo_path
 from debate_simulator.infrastructure.logging.rotating_writer import RotatingWriter
 
 
@@ -12,13 +13,10 @@ class LogConsumer:
 
     def __init__(self, fifo_path: str | Path, writer: RotatingWriter) -> None:
         """Create a consumer for a FIFO path and rotating writer."""
-        self.fifo_path = Path(fifo_path)
+        self.fifo_path = ensure_fifo_path(fifo_path)
         self.writer = writer
         self._stop_event = threading.Event()
         self._thread: threading.Thread | None = None
-        self.fifo_path.parent.mkdir(parents=True, exist_ok=True)
-        if not self.fifo_path.exists():
-            os.mkfifo(self.fifo_path)
 
     def start(self) -> None:
         """Start consuming log messages in a background thread."""

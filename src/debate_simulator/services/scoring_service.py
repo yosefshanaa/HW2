@@ -1,3 +1,5 @@
+import random
+
 from debate_simulator.models.debate import Penalty, Score
 
 
@@ -21,9 +23,9 @@ class ScoringService:
         )
 
     def determine_winner(self, pro_total: float, con_total: float) -> str:
-        """Return pro, con, or tie from score totals."""
+        """Return a decisive winner from score totals."""
         if pro_total == con_total:
-            return "tie"
+            return random.choice(["pro", "con"])
         return "pro" if pro_total > con_total else "con"
 
 

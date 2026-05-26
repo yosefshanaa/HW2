@@ -18,10 +18,10 @@ def test_scoring_service_applies_weights_and_penalties() -> None:
     assert score.total == 85.0
 
 
-def test_scoring_service_detects_tie() -> None:
-    """Winner determination supports ties."""
+def test_scoring_service_breaks_equal_scores_decisively() -> None:
+    """Winner determination never returns ties."""
     service = ScoringService(weights={})
 
     winner = service.determine_winner(pro_total=70, con_total=70)
 
-    assert winner == "tie"
+    assert winner in {"pro", "con"}

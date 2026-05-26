@@ -7,7 +7,8 @@ Run agents in isolated subprocesses and recover from hangs or crashes.
 - Each agent turn can run in a subprocess.
 - Timeouts kill the child process and return a penalized fallback response.
 - Watchdog pings expose process liveness.
-- JSON FIFO transports structured IPC payloads.
+- JSON FIFO helper transports structured payloads for components that need named-pipe IPC.
+- Debate turns use subprocess timeout execution and JSON-serializable Pydantic payloads.
 
 ## Interface
 - `ProcessManager.spawn_agent(target, *args)`

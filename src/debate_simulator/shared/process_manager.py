@@ -5,6 +5,7 @@ import time
 from collections.abc import Callable
 from multiprocessing import Process
 from pathlib import Path
+from queue import Empty
 from typing import Any
 
 from debate_simulator.models.agent import AgentResponse
@@ -28,7 +29,7 @@ class ProcessManager:
         process.start()
         return process
 
-    def run_with_timeout(self, target: Callable[..., AgentResponse], agent: str) -> AgentResponse:
+    def run_with_timeout(self, target: Callable[..., Any], agent: str) -> Any:
         """Run an agent callable in a subprocess and enforce timeout."""
         output = self._context.Queue()
         process = self._context.Process(target=_queue_runner, args=(target, output))
@@ -39,7 +40,10 @@ class ProcessManager:
             process.kill()
             process.join()
             return self._timeout_response(agent, time.perf_counter() - started)
-        result = output.get()
+        try:
+            result = output.get(timeout=FifoDefault.READ_TIMEOUT_SECONDS.value)
+        except Empty:
+            return self._timeout_response(agent, time.perf_counter() - started)
         if isinstance(result, Exception):
             raise result
         return result
@@ -93,7 +97,7 @@ class JsonFifo:
         raise TimeoutError(self.path)
 
 
-def _queue_runner(target: Callable[..., AgentResponse], output: Any) -> None:
+def _queue_runner(target: Callable[..., Any], output: Any) -> None:
     try:
         output.put(target())
     except Exception as error:

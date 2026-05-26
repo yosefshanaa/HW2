@@ -1,10 +1,4 @@
-"""Run N debates and tally Pro/Con/Tie wins to check for systematic bias."""
-
-import json
-import sys
-from pathlib import Path
-
-sys.path.insert(0, ".")
+"""Run N debates and tally Pro/Con wins to check for systematic bias."""
 
 
 def main(n: int = 5, topic: int | None = None) -> None:
@@ -13,7 +7,7 @@ def main(n: int = 5, topic: int | None = None) -> None:
     sdk = DebateSimulatorSDK()
     topics = sdk.list_topics()
     topic_str = topics[(topic or 1) - 1]
-    results = {"pro": 0, "con": 0, "tie": 0, "details": []}
+    results = {"pro": 0, "con": 0, "details": []}
 
     for i in range(n):
         print(f"\n--- Debate {i + 1}/{n} ---")
@@ -31,7 +25,6 @@ def main(n: int = 5, topic: int | None = None) -> None:
     print(f"Results from {total} debates on: {topic_str}")
     print(f"  Pro wins: {results['pro']}/{total} ({results['pro']/total*100:.0f}%)")
     print(f"  Con wins: {results['con']}/{total} ({results['con']/total*100:.0f}%)")
-    print(f"  Ties:    {results['tie']}/{total} ({results['tie']/total*100:.0f}%)")
     avg_gap = sum(d["gap"] for d in results["details"]) / total
     print(f"  Avg score gap (Pro - Con): {avg_gap:+.2f}")
     print(f"{'='*50}")

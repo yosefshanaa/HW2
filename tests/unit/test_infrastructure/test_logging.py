@@ -1,9 +1,11 @@
 import os
+import stat
 import threading
 import time
 from pathlib import Path
 
 from debate_simulator.infrastructure.logging.fifo_logger import FifoLogger
+from debate_simulator.infrastructure.logging.fifo_support import ensure_fifo_path
 from debate_simulator.infrastructure.logging.log_consumer import LogConsumer
 from debate_simulator.infrastructure.logging.rotating_writer import RotatingWriter
 
@@ -88,6 +90,26 @@ def test_logging_pipeline_preserves_concurrent_messages(tmp_path: Path) -> None:
     consumer.stop()
 
     assert _total_lines(tmp_path / "logs") == 200
+
+
+def test_fifo_path_falls_back_when_configured_filesystem_rejects_pipe(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """Unsupported project filesystems use a real FIFO in /tmp instead of crashing."""
+    monkeypatch.setenv("TMPDIR", str(tmp_path / "tmp"))
+
+    def fake_mkfifo(path: str | Path) -> None:
+        target = Path(path)
+        if target.parent == tmp_path:
+            raise OSError(95, "Operation not supported")
+        original_mkfifo(path)
+
+    original_mkfifo = os.mkfifo
+    monkeypatch.setattr(os, "mkfifo", fake_mkfifo)
+
+    fifo = ensure_fifo_path(tmp_path / "debate_fifo")
+
+    assert fifo.parent != tmp_path and stat.S_ISFIFO(fifo.stat().st_mode)
 
 
 def _read_one_fifo_line(fifo_path: Path, received: list[str]) -> None:

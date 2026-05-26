@@ -1,4 +1,5 @@
 import argparse
+from contextlib import suppress
 from typing import Any
 
 from rich.progress import BarColumn, MofNCompleteColumn, Progress, SpinnerColumn, TextColumn
@@ -8,22 +9,20 @@ from debate_simulator.sdk import DebateSimulatorSDK
 from debate_simulator.services.engine_helpers import enable_graceful_shutdown
 from debate_simulator.shared.constants import ConfigFile
 
-try:
+with suppress(ImportError):
     from main_display import print_final, print_header, print_result, print_round, print_topics
-except ImportError:
-    pass
 
 
-def _get_default_pings() -> int:
+def _get_default_pings(config_path: str = ConfigFile.SETUP.value) -> int:
     """Read max_pings from config, falling back to constant default."""
     try:
         import json
         from pathlib import Path
 
-        config = json.loads(Path(ConfigFile.SETUP.value).read_text(encoding="utf-8"))
+        config = json.loads(Path(config_path).read_text(encoding="utf-8"))
         return int(config.get("debate", {}).get("max_pings", 10))
     except (FileNotFoundError, ValueError, KeyError):
-        return 6
+        return 10
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -47,7 +46,7 @@ def main(argv: list[str] | None = None, sdk: Any | None = None) -> None:
     console = Console()
     enable_graceful_shutdown()
     hooks = _build_live_hooks(console, args) if sdk is None else None
-    debate_sdk = sdk or DebateSimulatorSDK(hooks=hooks)
+    debate_sdk = sdk or DebateSimulatorSDK(hooks=hooks, setup_path=args.config)
     if args.list_topics:
         print_topics(console, debate_sdk.list_topics())
         return
@@ -74,7 +73,7 @@ def _build_live_hooks(console: Any, args: Any) -> HookRegistry:
 
     def on_start(**kwargs: Any) -> None:
         nonlocal task_id
-        task_id = progress.add_task("Debating", total=args.pings or _get_default_pings())
+        task_id = progress.add_task("Debating", total=args.pings or _get_default_pings(args.config))
         progress.start()
 
     def on_round_end(round_model: Any = None, **kwargs: Any) -> None:

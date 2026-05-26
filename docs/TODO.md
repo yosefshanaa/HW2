@@ -157,7 +157,7 @@ Every task in this TODO is "done" when **all** of the following are true:
 | 7.2 | Implement watchdog mechanism — keep-alive pings, detect stuck processes | P0 | [x] | 7.1 |
 | 7.3 | Implement SIGKILL on timeout — log event, record penalty, fallback response | P0 | [x] | 7.1 |
 | 7.4 | Implement cumulative penalty tracking per agent | P1 | [x] | 7.1 |
-| 7.5 | Implement IPC via FIFO + JSON between agent processes | P0 | [x] | 7.1 |
+| 7.5 | Implement JSON-capable IPC helpers for agent/process communication | P0 | [x] | 7.1 |
 | 7.6 | Implement `sdk/sdk.py` — SDK entry point: start_debate(), list_topics(), get_results() | P0 | [x] | 8.1 |
 | 7.7 | Unit test (RED): ProcessManager — timeout triggers kill, penalty recorded | P0 | [x] | 7.1 |
 | 7.8 | Unit test (RED): Watchdog — detect stuck process, trigger kill | P1 | [x] | 7.2 |
@@ -173,15 +173,15 @@ Every task in this TODO is "done" when **all** of the following are true:
 |---|------|----------|--------|-----------|
 | 8.1 | Implement `services/debate_engine.py` — topic loading, agent initialization | P0 | [x] | 6.7, 6.9, 1.9 |
 | 8.2 | Implement research phase — parallel search for all 3 agents | P0 | [x] | 8.1, 4.1–4.5 |
-| 8.3 | Implement debate ping loop — **Con → Pro → Judge observes** (10 pings) | P0 | [x] | 8.1 |
-| 8.4 | Implement final scoring — judge reviews transcript, outputs scores + winner/tie | P0 | [x] | 8.3, 6.7 |
+| 8.3 | Implement debate ping loop — alternating speaker order, Father-mediated relay, 10 pings | P0 | [x] | 8.1 |
+| 8.4 | Implement final scoring — judge reviews transcript, outputs scores + decisive winner | P0 | [x] | 8.3, 6.7 |
 | 8.5 | Implement JSON export to `results/<timestamp>_<topic>.json` | P0 | [x] | 8.4 |
 | 8.6 | Implement `services/scoring_service.py` — weighted score computation, penalty application | P0 | [x] | 6.3 |
 | 8.7 | Implement `main.py` — CLI entry point consuming SDK (argparse + rich) | P0 | [x] | 7.6 |
 | 8.8 | Implement CLI flags: `--topic`, `--custom-topic`, `--pings`, `--config`, `--list-topics` | P0 | [x] | 8.7 |
 | 8.9 | Implement rich terminal output — round headers, agent names, progress bars | P2 | [x] | 8.7 |
 | 8.10 | Unit test (RED): DebateEngine — mock agents, verify flow, verify JSON output | P0 | [x] | 8.1 |
-| 8.11 | Unit test (RED): ScoringService — verify weighted scoring, penalty deduction, tie detection | P0 | [x] | 8.6 |
+| 8.11 | Unit test (RED): ScoringService — verify weighted scoring, penalty deduction, decisive tiebreaking | P0 | [x] | 8.6 |
 | 8.12 | Unit test (RED): CLI — verify argument parsing | P1 | [x] | 8.8 |
 | 8.13 | GREEN: implement all service tests to pass | P0 | [x] | 8.10–8.12 |
 | 8.14 | REFACTOR: clean up services code | P1 | [x] | 8.13 |
@@ -213,9 +213,9 @@ Every task in this TODO is "done" when **all** of the following are true:
 | 10.4 | E2E test: real debate with real API — verify non-determinism across 3+ runs | P0 | [ ] | 8.7 |
 | 10.5 | Test: verify penalties correctly applied and reflected in final scores | P1 | [x] | 10.1 |
 | 10.6 | Test: verify timeout kills agent and records penalty | P1 | [x] | 7.10 |
-| 10.7 | Test: verify tie detection (both agents equal scoring) | P1 | [x] | 10.1 |
-| 10.8 | Test: verify Father does NOT intervene during debate | P1 | [x] | 10.1 |
-| 10.9 | Test: verify Sons → Father one-directional communication | P1 | [x] | 10.1 |
+| 10.7 | Test: verify equal scores still produce a decisive winner | P1 | [x] | 10.1 |
+| 10.8 | Test: verify Father observes without coaching during debate | P1 | [x] | 10.1 |
+| 10.9 | Test: verify child arguments are Father-mediated, not direct child-to-child context | P1 | [x] | 10.1 |
 | 10.10 | GREEN: implement all integration/E2E tests to pass | P0 | [x] | 10.1–10.9 |
 | 10.11 | REFACTOR: clean up integration code | P1 | [x] | 10.10 |
 
@@ -307,7 +307,7 @@ Issues identified from manual test: agents repeat arguments, Pro argues Con's po
 | 15.2 | Add `REPETITION = -10` to `PenaltyPoints` enum in constants.py | P0 | [x] | 15.1 |
 | 15.3 | Add `repetition: 10` penalty to `config/setup.json` penalties section | P0 | [x] | 15.1 |
 | 15.4 | Add `max_words_per_response: 60` to `DebateConfig` in `shared/config.py` | P0 | [x] | — |
-| 15.5 | Reduce `max_pings` from 10 to 6 in `config/setup.json` | P0 | [x] | — |
+| 15.5 | Keep assignment default at 10 pings in `config/setup.json` | P0 | [x] | — |
 | 15.6 | Reduce `max_lines_per_response` from 3 to 2 in `config/setup.json` | P0 | [x] | — |
 | 15.7 | Reduce `max_tokens_per_response` from 1024 to 512 in `config/setup.json` | P0 | [x] | — |
 | 15.8 | Rewrite `debater_system.md` — explicit stance rules with examples, no-repetition rule, word/line caps, new-argument-per-round rule, previous-arguments block | P0 | [x] | 15.1 |
@@ -339,18 +339,40 @@ See PLAN ADR-012 and PRD_judge_evaluation §Bias Mitigation.
 |---|------|----------|--------|-----------|
 | 16.1 | Make `build_round_prompt` example use EQUAL placeholder scores (remove Pro=75/Con=70 anchor) | P0 | [x] | — |
 | 16.2 | Fold penalties into `Score.total`, averaged per round, in `run_final_scoring` | P0 | [x] | 16.1 |
-| 16.3 | `declare_winner` compares penalty-adjusted totals via `ScoreDefault.TIE_MARGIN` | P0 | [x] | 16.2 |
+| 16.3 | `declare_winner` compares penalty-adjusted totals and returns only `pro` or `con` | P0 | [x] | 16.2 |
 | 16.4 | Remove bogus range-midpoint normalization in `evaluate_debate` | P0 | [x] | — |
 | 16.5 | Remove double penalty application (drop throwaway `build_result` in `run_final_scoring`; remove `apply_final_penalties` from `build_result`) | P0 | [x] | 16.2 |
-| 16.6 | Add `ScoreDefault.TIE_MARGIN` constant | P1 | [x] | 16.3 |
-| 16.7 | `test_bias.py` — tally Pro/Con/Tie across N debates | P0 | [x] | — |
-| 16.8 | Verify: `ruff check` 0 errors, `pytest` 145 passing | P0 | [x] | 16.1–16.6 |
+| 16.6 | Remove tie-margin winner behavior to match the lecture's no-tie rule | P1 | [x] | 16.3 |
+| 16.7 | `tests/test_bias.py` — tally Pro/Con across N debates | P0 | [x] | — |
+| 16.8 | Verify: `ruff check` 0 errors, `pytest` 148 passed / 1 skipped, coverage 91.37% | P0 | [x] | 16.1–16.6 |
 | 16.9 | E2E bias verification: `test_bias.py -n 20` shows no systematic lean | P0 | [~] | 16.7 |
 | 16.10 | (follow-up) Make judge spread quality scores more (reduce ~70 clustering) so quality, not jitter, drives close calls | P1 | [ ] | 16.9 |
-| 16.11 | (follow-up) Move `test_bias.py` under `tests/` or expose via SDK | P2 | [ ] | 16.7 |
-| 16.12 | (follow-up) Consider moving `TIE_MARGIN` to `config/setup.json` `scoring` section | P2 | [ ] | 16.6 |
+| 16.11 | Move `test_bias.py` under `tests/` | P2 | [x] | 16.7 |
+| 16.12 | Remove obsolete `tie_margin` config after decisive-winner correction | P2 | [x] | 16.6 |
 
 This also advances the previously-open non-determinism items: **10.4**, **10.10**, **14.10**.
+
+---
+
+## Phase 17: Assignment Compliance Hardening
+
+Corrections after re-reading the lecture summary and software submission guidelines.
+
+| # | Task | Priority | Status | Depends On |
+|---|------|----------|--------|-----------|
+| 17.1 | Stop the long-running `tests/test_bias.py -n 20` API run before changing semantics | P0 | [x] | — |
+| 17.2 | Enforce no exported ties in `DebateResult`, `JudgeAgent`, and `ScoringService` | P0 | [x] | 16.2 |
+| 17.3 | Keep default debate length at the required 10 pings across config and docs | P0 | [x] | 15.5 |
+| 17.4 | Run debater turns through subprocess timeout management and preserve parent-side agent state | P0 | [x] | 7.1 |
+| 17.5 | Relay opponent messages through Father context instead of direct child-to-child wording | P0 | [x] | 8.3 |
+| 17.6 | Give the Father agent internet search for debate-judging criteria | P0 | [x] | 4.1 |
+| 17.7 | Start FIFO log consumer from the SDK so gatekeeper calls reach rotating logs | P1 | [x] | 2.3 |
+| 17.8 | Update README/PRDs/PLAN/TODO to match decisive-winner and 10-ping rules | P0 | [x] | 17.2 |
+| 17.9 | Normalize judge penalty names case-insensitively so LLM outputs like `STANCE_CONTRADICTION` are not dropped | P0 | [x] | 15.9 |
+| 17.10 | Split oversized judge-helper tests so all Python files stay at or below 150 lines | P1 | [x] | 17.8 |
+| 17.11 | Wire CLI `--config` into the SDK settings loader instead of ignoring the public flag | P0 | [x] | 8.8 |
+| 17.12 | Add `/tmp` FIFO fallback for WSL `/mnt/c` and other filesystems that reject `mkfifo` | P0 | [x] | 2.3 |
+| 17.13 | Live smoke test: `main.py --topic 1 --pings 1` completes after FIFO fallback | P1 | [x] | 17.12 |
 
 ---
 
@@ -358,12 +380,12 @@ This also advances the previously-open non-determinism items: **10.4**, **10.10*
 
 | Category | Count |
 |----------|-------|
-| Total tasks | **143** |
-| P0 (critical) | **92** |
-| P1 (high) | **42** |
+| Total tasks | **156** |
+| P0 (critical) | **102** |
+| P1 (high) | **45** |
 | P2 (medium) | **9** |
 | P3 (low) | **0** |
-| Phases | **15** |
+| Phases | **17** |
 
 ### Professor's Grading Checklist (from submission guidelines V3)
 
@@ -382,7 +404,7 @@ This also advances the previously-open non-determinism items: **10.4**, **10.10*
 | Submission artifact | Assignment PDF + photos | Covered: 12.19 |
 | conftest.py shared fixtures | `tests/conftest.py` | Covered: 1.16 |
 | __main__.py | `src/debate_simulator/__main__.py` | Covered: 1.15 |
-| Con starts first | Ping loop: Con → Pro → Judge | Covered: 8.3 |
+| Speaker order fairness | Alternating Pro-first / Con-first ping loop | Covered: 8.3 |
 | API Gatekeeper for all external calls | `shared/gatekeeper.py` | Covered: 3.1–3.7 |
 | Rate limiting from config file | `config/rate_limits.json` | Covered: 1.8, 3.2 |
 | Queue testing | Phase 3 tests | Covered: 3.11 |

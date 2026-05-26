@@ -1,3 +1,5 @@
+import pytest
+
 from debate_simulator.models.agent import AgentResponse, Message, TurnContext
 from debate_simulator.models.config_models import validate_config
 from debate_simulator.models.debate import DebateResult, Penalty, Round, RoundEvaluation, Score
@@ -14,13 +16,13 @@ def test_agent_models_validate_core_fields() -> None:
     assert context.memory[0].role == AgentRole.PRO and response.lines == 2
 
 
-def test_debate_result_accepts_tie_winner() -> None:
-    """DebateResult supports tie outcomes."""
+def test_debate_result_rejects_tie_winner() -> None:
+    """DebateResult requires a decisive Father verdict."""
     penalty = Penalty(type=PenaltyType.EXCEED_LINES, points=-5, reason="too long", agent="pro")
     score = Score(total=80.0, breakdown={"compliance": 85.0}, penalties_applied=[penalty])
-    result = DebateResult(topic="AI", final_scores={"pro": score, "con": score}, winner="tie")
 
-    assert result.winner == "tie"
+    with pytest.raises(ValueError):
+        DebateResult(topic="AI", final_scores={"pro": score, "con": score}, winner="tie")
 
 
 def test_round_and_round_evaluation_models() -> None:

@@ -1,6 +1,6 @@
 # AI Court Debate Simulator
 
-A terminal-based Python SDK application that simulates structured debates between two AI agents (Pro / Con) on a given topic, moderated and scored by a third AI agent acting as a **Judge**. The judge is **not a domain expert** — he evaluates based on **argumentation quality, rebuttal effectiveness, evidence use, and rhetorical technique**.
+A terminal-based Python SDK application that simulates a court-style debate between two AI agents (Pro / Con), moderated and scored by a third **Father/Judge** agent. The judge is **not a domain expert**; he judges persuasion, evidence, rebuttal quality, respect, and stance discipline. Each normal debate runs **10 pings** and ends with a **decisive winner**: `pro` or `con`, never `tie`.
 
 ---
 
@@ -65,33 +65,67 @@ uv run python main.py --custom-topic "Should AI replace most jobs by 2050?"
 uv run python main.py --topic 1 --pings 5
 ```
 
+The assignment requires 10 pings by default. A lower `--pings` value is supported for budget-limited smoke tests and should be mentioned explicitly when used.
+
 ### What You'll See
 
-<!-- TODO: Add screenshots of terminal output here after first successful run -->
-
 ```
-╭──────────────────────────────────────────────────────────────╮
-│  🔔 AI Court Debate Simulator                              │
-│                                                              │
-│  Topic: Barcelona vs Real Madrid — greatest football club      │
-│  Con Agent ████████████████████████░░░░░ Pro Agent               │
-│  Judge   ████████████████████████░░░░░  (observing)           │
-│                                                              │
-│  Ping 1/10  ████████████████████████████████████░░░░░░░  ✓    │
-│  Ping 2/10  ████████████████████████████████████░░░░░░░  ✓    │
-│  ...                                                         │
-│  Ping 10/10 ████████████████████████████████████░░░░░░░  ✓    │
-│                                                              │
-│  ═══════════════════════════════════════════════════════════  │
-│  FINAL SCORES                                                │
-│  Pro Agent:  ████████████████████████░░ 78%                        │
-│  Con Agent:  ████████████████████████░░ 72%                        │
-│  Winner: Pro Agent                                           │
-│ ═══════════════════════════════════════════════════════════  │
-╰──────────────────────────────────────────────────────────────╯
+╔═════════════════════════ AI Court Debate Simulator ══════════════════════════╗
+║ Barcelona vs Real Madrid — greatest football club                            ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+── Round 1 ──
+╭──────────────────────────────────── Pro ─────────────────────────────────────╮
+│  Barcelona is the greatest football club due to its unparalleled commitment  │
+│  to youth development, exemplified by its La Masia academy, which has        │
+│  produced legends like Lionel Messi and Xavi. This strong focus on           │
+│  nurturing homegrown talent not only fosters a unique style of play but      │
+│  also builds lasting connections with fans, ensuring a legacy that extends   │
+│  beyond mere trophies.                                                       │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭──────────────────────────────────── Con ─────────────────────────────────────╮
+│  While Barcelona's youth development is commendable, Real Madrid's           │
+│  extensive history of success, with a record 14 UEFA Champions League        │
+│  titles, demonstrates its dominance in European football...                  │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭──────────────────────────────── Judge Notes ─────────────────────────────────╮
+│ Con: The Con speaker effectively highlights Real Madrid's historical         │
+│ success, specifically referencing their record in the UEFA Champions League. │
+│ Pro: The Pro speaker presents a clear argument about Barcelona's commitment  │
+│ to youth development and its impact on the club's legacy.                   │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+── Round 2 ──
+...
+
+  Debating ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 3/3
+───────────────────────────────── Final Scores ─────────────────────────────────
+╭─────────────────────────────────── Scores ───────────────────────────────────╮
+│ Con: 74.9%                                                                   │
+│ Pro: 72.5%                                                                   │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+Winner: CON
 ```
 
-<!-- TODO: Replace with actual screenshot -->
+---
+
+## Assignment Alignment
+
+| Requirement | Implementation |
+|-------------|----------------|
+| Father + two sons | `JudgeAgent`, `ProDebaterAgent`, `ConDebaterAgent` |
+| 10 debate pings | `config/setup.json` → `debate.max_pings = 10` |
+| Decisive winner, no tie | `DebateResult` validates `winner in {"pro", "con"}` |
+| Internet search required | Debaters and judge receive `web_search` through the SDK |
+| Judge is not a domain expert | Judge prompt evaluates debate technique, not topic truth |
+| Respectful debate and stance control | Prompt rules plus penalties for disrespect, ignored rebuttal, stance contradiction, repetition |
+| Time/process blocking | `ProcessManager.run_with_timeout()` kills timed-out turns and records penalties |
+| SDK layer | CLI delegates to `DebateSimulatorSDK`; business logic stays below SDK |
+| Configurable runtime | CLI `--config` is passed into the SDK settings loader |
+| Logs | FIFO logger, background consumer, 20 rotating files, 500 lines each |
+| No secrets | `.env` ignored; `.env.example` contains placeholders only |
+| UV only | `pyproject.toml` + `uv.lock`; commands use `uv run` / `uv sync` |
 
 ---
 
@@ -117,7 +151,7 @@ Options:
 # List all topics
 uv run python main.py --list-topics
 
-# Specific topic with default 6 pings
+# Specific topic with default 10 pings
 uv run python main.py --topic 3
 
 # Custom topic with 5 pings
@@ -153,11 +187,13 @@ CLI (main.py)
 └──────────────┘
 ```
 
-### Agent Communication (IPC)
+### Agent Communication And Process Control
 
-- Each agent runs as a **separate process**
-- Agents communicate via **FIFO (named pipes)** using **JSON** protocol
-- Communication is **one-directional**: Sons → Father (judge only listens, never intervenes)
+- Debater turns execute through `ProcessManager` subprocess timeouts; stuck children are killed and penalized.
+- Structured payloads are Pydantic/JSON-compatible models (`TurnContext`, `AgentResponse`, `Round`, `DebateResult`).
+- The Father mediates opponent messages: child output is relayed as Father-provided context to the next child, not as direct child-to-child conversation.
+- The judge observes and scores; he does not coach the debaters during the debate.
+- FIFO is used for the logging pipeline: `LOG → FIFO → 20 rotating files × 500 lines`.
 - **Speaker order alternates** by round — Pro speaks first on odd pings, Con first on even pings — to neutralize speaker-order bias
 
 ### C4 Model
@@ -166,7 +202,7 @@ CLI (main.py)
 |-------|-------------|
 | **Context** | Professor → CLI → SDK → OpenAI API + DuckDuckGo |
 | **Container** | SDK → Domain Services → Infrastructure |
-| **Component** | Agents (3 processes) communicating via FIFO pipes |
+| **Component** | Agent turns isolated by subprocess timeouts; Father-mediated message relay |
 | **Code** | Classes: BaseAgent → DebaterAgent → ProDebaterAgent/ConDebaterAgent |
 
 For full diagrams see [PLAN.md](docs/PLAN.md).
@@ -199,6 +235,11 @@ OPENAI_API_KEY=your_zai_key_here
 OPENAI_BASE_URL=https://api.z.ai/api/paas/v4
 ```
 
+[Z.AI currently documents](https://docs.z.ai/guides/llm/glm-5.1) `glm-5.1` as the
+OpenAI-compatible GLM model name with a 200K context window. If the course run
+requires GLM, set `llm.model` in `config/setup.json` to `glm-5.1` and keep the
+base URL above.
+
 ### `config/setup.json` (versioned)
 
 All configurable parameters — **no hardcoded constants**:
@@ -211,11 +252,18 @@ All configurable parameters — **no hardcoded constants**:
 | `debate.max_pings` | `10` | config/setup.json |
 | `debate.agent_timeout_seconds` | `60` | config/setup.json |
 | `debate.keepalive_interval_seconds` | `10` | config/setup.json |
+| `debate.max_lines_per_response` | `2` | config/setup.json |
+| `debate.max_words_per_response` | `90` | config/setup.json |
 | `search.engine` | `duckduckgo` | config/setup.json |
 | `logging.max_files` | `20` | config/setup.json |
 | `logging.max_lines_per_file` | `500` | config/setup.json |
 | `scoring.weights.*` | See config | config/setup.json |
 | `penalties.*` | See config | config/setup.json |
+
+The logging FIFO uses `logging.fifo_path` when the filesystem supports named pipes.
+On WSL-mounted Windows paths such as `/mnt/c`, it falls back to a real FIFO under
+`/tmp/debate_simulator/`; rotating log files still stay under the configured `logs/`
+directory.
 
 ### `config/rate_limits.json` (versioned)
 
@@ -301,8 +349,9 @@ modify the verdict without swamping argument quality: a debater who repeats or r
 long every round loses ground proportionally, but one stray penalty does not decide
 the debate. The penalty-adjusted total is what the judge compares to declare the winner.
 
-**Ties are valid** — the judge declares a tie when the two penalty-adjusted totals are
-within `ScoreDefault.TIE_MARGIN` (default 2.0, in `shared/constants.py`) of each other.
+The Father must declare a winner. If penalty-adjusted totals are exactly equal, the
+implementation breaks the deadlock randomly between `pro` and `con`; this preserves the
+lecture requirement that there is no tie while avoiding a hardcoded side preference.
 
 ### Fairness & Bias Mitigation
 
@@ -316,20 +365,23 @@ The judge is engineered to avoid systematic favoritism toward either side:
   rounds, so neither side gets a consistent primacy/recency advantage.
 - **Per-round penalty averaging** — penalties are normalized to the per-round scale (see
   above) so they cannot mechanically dominate the quality contest.
+- **Decisive tiebreaking** — exact equality is resolved without returning `tie`, matching
+  the lecture requirement that the Father must choose a winner.
 - **Per-round jitter** — a small random component is added to each round's speaker score
-  so genuinely close debates resolve non-deterministically (the same matchup can go
-  either way across runs), as required by the assignment.
+  so genuinely close debates can resolve differently across runs.
 
-Run `python test_bias.py -n 20` to tally Pro/Con/Tie outcomes and confirm there is no
+Run `uv run python tests/test_bias.py -n 20` to tally Pro/Con outcomes and confirm there is no
 systematic lean.
 
 ### Prompt Guardrails
 
 - Son agents receive only their own stance, the topic, the round number, research notes, and the opponent's last speech.
 - For `A vs B` topics, Pro argues for `A` and Con argues for `B`; otherwise Pro supports the motion and Con opposes it.
-- The Father judge returns JSON notes per round and JSON scores at the end.
+- The Judge searches the web for debate-judging criteria at startup, then returns JSON notes per round and JSON scores at the end.
 - If a model accidentally echoes the prompt, the response is replaced with a short fallback argument and penalized where appropriate.
+- Judge penalty names are parsed case-insensitively, so critical violations are not dropped because of enum casing.
 - Round penalties are deducted from the final score before the winner is declared.
+- `winner` is validated as either `"pro"` or `"con"` in the exported result model.
 
 ### Example JSON Output
 
@@ -369,7 +421,10 @@ systematic lean.
 
 ## Skills System
 
-Each agent has **project-local skills** (not global). The **RouterSkill** reads `skill.md` files and selects the appropriate skill based on context.
+Skills are **project-local** (not global agent skills). The default SDK wires `web_search`
+into the Judge and both debaters because internet evidence is mandatory; the remaining
+skills are implemented as reusable project mechanisms and covered by tests. The
+`RouterSkill` reads `skill.md` files and selects an appropriate skill by description.
 
 | Skill | Owner | Description |
 |-------|-------|-------------|
@@ -424,7 +479,7 @@ Every feature follows **RED → GREEN → REFACTOR**:
 | Architecture | SDK-based (3 layers: SDK → Domain Services → Infrastructure) |
 | Design Patterns | Template Method, Router-Skill, Mixins (one behavior each) |
 | Inheritance | 2+ levels: `BaseAgent → DebaterAgent → ProDebaterAgent` |
-| IPC | JSON over FIFO named pipes between processes |
+| IPC / Process Control | JSON-compatible models, subprocess turn isolation, Father-mediated relay |
 | Concurrency | Multiprocessing for agents, multithreading for I/O (gatekeeper) |
 | Package Manager | **UV** (not pip) |
 | Version | Starts at **1.00** in all versioned files |
@@ -471,6 +526,18 @@ omit = ["*/tests/*"]
 [tool.coverage.report]
 fail_under = 85
 ```
+
+### Verification Snapshot
+
+Last verified on 2026-05-26:
+
+| Check | Result |
+|-------|--------|
+| `uv run ruff check src tests main.py main_display.py` | 0 errors |
+| `uv run pytest` | 148 passed, 1 skipped |
+| `uv run pytest --cov --cov-report=term-missing` | 91.37% total coverage |
+| `timeout 180s uv run python main.py --topic 1 --pings 1` | Completed; Con won 81.8% vs Pro 73.4% |
+| Running background jobs | None after verification |
 
 ---
 

@@ -234,19 +234,19 @@ debate-simulator/
 ### 2.3 Component Diagram — Agent Communication (IPC)
 
 ```
-┌──────────────────┐     JSON/FIFO     ┌──────────────────┐
+┌──────────────────┐  JSON relay/queue  ┌──────────────────┐
 │   Pro Agent      │───────────────────▶│                  │
 │   (Son 1)        │                    │   Judge Agent    │
 │   Process 1      │                    │   (Father)       │
 └──────────────────┘                    │   Process 3      │
                                         │                  │
-┌──────────────────┐     JSON/FIFO     │  [Listens only]  │
+┌──────────────────┐  JSON relay/queue  │ [Mediator/Judge] │
 │   Con Agent      │───────────────────▶│  [No reply]      │
 │   (Son 2)        │                    │                  │
 │   Process 2      │                    │                  │
 └──────────────────┘                    └────────┬─────────┘
          ▲                                       │
-         │              JSON/FIFO                │
+         │          JSON relay/FIFO logs         │
          └───────────────────────────────────────┘
          [Pro ↔ Con alternate each ping]
          [Judge only receives from both]
@@ -395,7 +395,7 @@ ConAgent      ProAgent      JudgeAgent    ProcessMgr    FIFO
 │         │              │           │                     │
 │         ▼              ▼           ▼                     │
 │  ┌───────────────────────────────────────────────┐       │
-│  │  FIFO Pipes (named pipes for IPC)             │       │
+│  │  Process queues + FIFO log pipe               │       │
 │  └───────────────────────┬───────────────────────┘       │
 │                          │                                │
 │  ┌──────────────┐  ┌────┴────┐  ┌──────────────┐         │
@@ -421,16 +421,16 @@ ConAgent      ProAgent      JudgeAgent    ProcessMgr    FIFO
 - **Alternatives considered**: Direct CLI coupling, monolithic script
 
 ### ADR-002: Multiprocessing for Agents
-- **Decision**: Each agent runs as a separate process (not thread)
-- **Context**: Agents need hard process boundaries for timeout/SIGKILL
+- **Decision**: Debater turns run through subprocess timeout control (not threads)
+- **Context**: Agent turns need hard process boundaries for timeout/SIGKILL
 - **Trade-offs**: +true isolation, +SIGKILL works; -higher memory, -IPC overhead
 - **Alternatives considered**: asyncio threads (can't SIGKILL), single process
 
 ### ADR-003: FIFO for IPC and Logging
-- **Decision**: Use named pipes (FIFO) for both agent communication and logging
+- **Decision**: Use named pipes (FIFO) for logging and JSON-capable helpers/queues for process payloads
 - **Context**: Professor requires FIFO-based logging with 20 files × 500 lines
 - **Trade-offs**: +async, +decoupled; -platform-dependent, -buffer management
-- **Alternatives considered**: queues (in-process only), sockets (overkill)
+- **Alternatives considered**: sockets (overkill), direct in-process calls (not killable)
 
 ### ADR-004: ChromaDB for RAG
 - **Decision**: Use ChromaDB as local vector store
@@ -497,9 +497,9 @@ ConAgent      ProAgent      JudgeAgent    ProcessMgr    FIFO
   - Penalties averaged per round (`penalty_total / rounds`) and folded into `Score.total`
   - Penalties applied exactly once in `run_final_scoring`; removed from `build_result`
   - Removed the bogus range-midpoint "normalization" in `evaluate_debate`
-  - `declare_winner` compares penalty-adjusted totals using `ScoreDefault.TIE_MARGIN`
-  - Added `test_bias.py` to tally Pro/Con/Tie across N debates
-- **Trade-offs**: +eliminates systematic side bias, +penalties matter proportionally, +genuine non-determinism; -close debates depend on jitter, so reproducibility requires fixing a seed
+  - `declare_winner` returns only `pro` or `con`; exact equality is broken without a fixed side preference
+  - Added `tests/test_bias.py` to tally Pro/Con outcomes across N debates
+- **Trade-offs**: +eliminates systematic side bias, +penalties matter proportionally, +matches the no-tie lecture rule; -close debates depend on jitter, so reproducibility requires fixing a seed
 - **Alternatives considered**: re-introducing asymmetric anchors (rejected — caused the bug), penalty caps (less principled than per-round averaging), LLM-judge-only scoring with no jitter (too deterministic)
 
 ---
@@ -542,7 +542,7 @@ Responsibilities:
 Key Design:
 - System prompts loaded from skill.md files
 - use_skill(name, **kwargs) method
-- Each agent runs in its own process via ProcessManager
+- Debater turns run through ProcessManager subprocess timeouts
 - Mixins: LoggingMixin, TimeoutMixin, SkillRegistryMixin
 ```
 
@@ -567,7 +567,7 @@ Initialization:
 4. Load judge-specific skills
 
 Per-round: observe + take notes (no intervention)
-Final: score each debater on 5 dimensions, apply penalties, declare winner/tie
+Final: score each debater, apply penalties, declare a decisive winner
 ```
 
 ### 4.4 `agents/debater_agent.py`
@@ -619,8 +619,8 @@ Output: AgentResponse or FallbackResponse (on timeout)
 Setup:  keepalive_interval from config
 
 Responsibilities:
-- Spawn each agent as a separate process (multiprocessing)
-- Enforce per-turn timeout (asyncio.wait_for)
+- Run agent turns in subprocesses (multiprocessing)
+- Enforce per-turn timeout (`Process.join(timeout=...)`)
 - Watchdog: periodic keep-alive pings to detect stuck processes
 - On timeout: SIGKILL the process, log event, record penalty
 - Track cumulative penalties per agent
@@ -711,7 +711,7 @@ Implementation:
     "api_key_env": "OPENAI_API_KEY"
   },
   "debate": {
-    "max_pings": 6,
+    "max_pings": 10,
     "agent_timeout_seconds": 60,
     "keepalive_interval_seconds": 10,
     "max_lines_per_response": 2,

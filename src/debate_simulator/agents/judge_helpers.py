@@ -90,8 +90,9 @@ def map_penalties(agent: str, names: list[Any]) -> list[Penalty]:
     _heavy = {PenaltyType.IGNORE_REBUTTAL, PenaltyType.EXCEED_TIME, PenaltyType.REPETITION}
     penalties = []
     for name in names:
+        penalty_name = str(name).strip().lower()
         try:
-            pt = PenaltyType(str(name))
+            pt = PenaltyType(penalty_name)
         except ValueError:
             continue
         if pt == PenaltyType.STANCE_CONTRADICTION:

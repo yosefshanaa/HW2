@@ -64,13 +64,13 @@ class Judge:
         return RoundEvaluation()
 
     def evaluate_debate(self, transcript):
-        """Return tied scores."""
+        """Return close scores."""
         score = Score(total=1, breakdown={}, penalties_applied=[])
         return {"pro": score, "con": score}
 
     def declare_winner(self, scores):
-        """Return a tie."""
-        return "tie"
+        """Return a decisive winner."""
+        return "pro"
 
 
 def test_search_skill_gracefully_degrades_on_failure() -> None:
