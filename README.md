@@ -108,6 +108,20 @@ The assignment requires 10 pings by default. A lower `--pings` value is supporte
 Winner: CON
 ```
 
+Live terminal output:
+
+**Opening banner with the topic:**
+
+![Debate header banner showing the selected topic](assets/screenshot_debate_header.png)
+
+**A single round — Pro argument, Con rebuttal, and Judge notes:**
+
+![One debate round with Pro, Con, and Judge Notes boxes](assets/screenshot_debate_round.png)
+
+**Final scores and the decisive winner:**
+
+![Final scores panel with the declared winner](assets/screenshot_final_scores.png)
+
 ---
 
 ## Assignment Alignment
@@ -126,6 +140,10 @@ Winner: CON
 | Logs | FIFO logger, background consumer, 20 rotating files, 500 lines each |
 | No secrets | `.env` ignored; `.env.example` contains placeholders only |
 | UV only | `pyproject.toml` + `uv.lock`; commands use `uv run` / `uv sync` |
+
+A full default run (`uv run python main.py --topic 1`) completes all **10 pings** and ends with a decisive winner — no `--pings` override needed:
+
+![Completed 10-ping debate showing Round 10, the 10/10 progress bar, final scores, and the winner](assets/screenshot_debate_10rounds.png)
 
 ---
 
@@ -160,6 +178,10 @@ uv run python main.py --custom-topic "Nuclear energy is the solution to climate 
 # Verbose logging
 uv run python main.py --topic 1 --verbose
 ```
+
+Listing the pre-configured topics:
+
+![Output of --list-topics showing all 10 numbered debate topics](assets/screenshot_list_topics.png)
 
 ---
 
@@ -538,6 +560,14 @@ Last verified on 2026-05-26:
 | `uv run pytest --cov --cov-report=term-missing` | 91.37% total coverage |
 | `timeout 180s uv run python main.py --topic 1 --pings 1` | Completed; Con won 81.8% vs Pro 73.4% |
 | Running background jobs | None after verification |
+
+**`uv run pytest` — 148 passed, 1 skipped:**
+
+![pytest output showing 148 passed, 1 skipped](assets/screenshot_tests_passing.png)
+
+**`uv run pytest --cov --cov-report=term-missing` — 91.37% total coverage:**
+
+![Coverage report showing 91.37% total coverage above the 85% threshold](assets/screenshot_coverage.png)
 
 ---
 
