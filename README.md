@@ -122,6 +122,8 @@ Live terminal output:
 
 ![Final scores panel with the declared winner](assets/screenshot_final_scores.png)
 
+📄 **A complete 10-ping session — every round's Pro/Con text and Judge notes — is transcribed in [docs/SAMPLE_DEBATE.md](docs/SAMPLE_DEBATE.md).**
+
 ---
 
 ## Assignment Alignment
@@ -131,6 +133,7 @@ Live terminal output:
 | Father + two sons | `JudgeAgent`, `ProDebaterAgent`, `ConDebaterAgent` |
 | 10 debate pings | `config/setup.json` → `debate.max_pings = 10` |
 | Decisive winner, no tie | `DebateResult` validates `winner in {"pro", "con"}` |
+| Each son a *different* skill (no self-collapse) | Pro → `argument_builder`, Con → `rebuttal_builder` (distinct `distinctive_skill` per class) |
 | Internet search required | Debaters and judge receive `web_search` through the SDK |
 | Judge is not a domain expert | Judge prompt evaluates debate technique, not topic truth |
 | Respectful debate and stance control | Prompt rules plus penalties for disrespect, ignored rebuttal, stance contradiction, repetition |
@@ -214,6 +217,7 @@ CLI (main.py)
 - Debater turns execute through `ProcessManager` subprocess timeouts; stuck children are killed and penalized.
 - Structured payloads are Pydantic/JSON-compatible models (`TurnContext`, `AgentResponse`, `Round`, `DebateResult`).
 - The Father mediates opponent messages: child output is relayed as Father-provided context to the next child, not as direct child-to-child conversation.
+- **Orchestration is a service, not the Judge object.** The three agents (`Pro`, `Con`, `Judge`) are peers; a dedicated `DebateEngine` service owns the loop and routes every message through the Father relay (`father_relay`). This is the lecture's recommended "main process manages the three processes" design — the sons are *supervised by* the Father's mediation, but are not spawned as black-box sub-agents of the `JudgeAgent`. Separating orchestration from judging keeps the Judge focused on scoring and the flow independently testable.
 - The judge observes and scores; he does not coach the debaters during the debate.
 - FIFO is used for the logging pipeline: `LOG → FIFO → 20 rotating files × 500 lines`.
 - **Speaker order alternates** by round — Pro speaks first on odd pings, Con first on even pings — to neutralize speaker-order bias
@@ -444,21 +448,25 @@ systematic lean.
 ## Skills System
 
 Skills are **project-local** (not global agent skills). The default SDK wires `web_search`
-into the Judge and both debaters because internet evidence is mandatory; the remaining
-skills are implemented as reusable project mechanisms and covered by tests. The
+into the Judge and both debaters because internet evidence is mandatory. Crucially, **each
+son also owns a *different* distinctive skill** so the two debaters can never collapse into
+identical behavior (lecture requirement): the **Pro** agent generates its turn through
+`argument_builder`, while the **Con** agent generates its turn through `rebuttal_builder`.
+The debater routes its full system prompt through that skill, so the skill makes the turn's
+single LLM call. The remaining skills are reusable project mechanisms covered by tests. The
 `RouterSkill` reads `skill.md` files and selects an appropriate skill by description.
 
 | Skill | Owner | Description |
 |-------|-------|-------------|
 | `web_search` | All agents | Search the internet for information |
+| `argument_builder` | **Pro debater** (distinctive) | Generate the affirmative turn from the rendered prompt |
+| `rebuttal_builder` | **Con debater** (distinctive) | Generate the rebuttal turn from the rendered prompt |
 | `rag_store` | All agents | Store fetched content into vector store |
 | `rag_retrieve` | All agents | Retrieve relevant context from vector store |
 | `fact_check` | Judge | Verify claims made by debaters |
 | `stance_check` | Judge | Detect stance contradiction |
 | `respect_check` | Judge | Detect disrespectful language |
 | `rebuttal_check` | Judge | Detect ignored rebuttals |
-| `argument_builder` | Debaters | Construct structured arguments with evidence |
-| `rebuttal_builder` | Debaters | Construct targeted rebuttals |
 
 Skills follow the **Router-Skill pattern**: read all descriptions → select relevant one → execute. Each skill directory contains `skill.md` (description) + `skill.py` (implementation).
 
@@ -516,6 +524,18 @@ Every feature follows **RED → GREEN → REFACTOR**:
 - Feature branches for each development phase
 - Meaningful messages — explain what and why
 
+### Contribution Guidelines
+
+1. Branch from `main`; never commit directly to `main`.
+2. Follow the project standards above (≤150 lines/file, Ruff clean, docstrings, no hardcoded values).
+3. Write tests first (TDD) and keep coverage ≥ 85% — run `uv run pytest --cov` before pushing.
+4. Record any notable prompt iterations in [docs/PROMPT_ENGINEERING_LOG.md](docs/PROMPT_ENGINEERING_LOG.md).
+5. Open a Pull Request with a clear description; ensure `uv run ruff check` and `uv run pytest` pass.
+
+The full prompt-engineering history (the prompts used to build and tune the agents) lives in
+[docs/PROMPT_ENGINEERING_LOG.md](docs/PROMPT_ENGINEERING_LOG.md); the live agent prompts are in
+`src/debate_simulator/agents/prompts/`.
+
 ---
 
 ## Testing
@@ -556,18 +576,18 @@ Last verified on 2026-05-26:
 | Check | Result |
 |-------|--------|
 | `uv run ruff check src tests main.py main_display.py` | 0 errors |
-| `uv run pytest` | 148 passed, 1 skipped |
-| `uv run pytest --cov --cov-report=term-missing` | 91.37% total coverage |
+| `uv run pytest` | 153 passed, 1 skipped |
+| `uv run pytest --cov --cov-report=term-missing` | 91.54% total coverage |
 | `timeout 180s uv run python main.py --topic 1 --pings 1` | Completed; Con won 81.8% vs Pro 73.4% |
 | Running background jobs | None after verification |
 
-**`uv run pytest` — 148 passed, 1 skipped:**
+**`uv run pytest` — 153 passed, 1 skipped:**
 
-![pytest output showing 148 passed, 1 skipped](assets/screenshot_tests_passing.png)
+![pytest output showing 153 passed, 1 skipped](assets/screenshot_tests_passing.png)
 
-**`uv run pytest --cov --cov-report=term-missing` — 91.37% total coverage:**
+**`uv run pytest --cov --cov-report=term-missing` — 91.54% total coverage:**
 
-![Coverage report showing 91.37% total coverage above the 85% threshold](assets/screenshot_coverage.png)
+![Coverage report showing 91.54% total coverage above the 85% threshold](assets/screenshot_coverage.png)
 
 ---
 

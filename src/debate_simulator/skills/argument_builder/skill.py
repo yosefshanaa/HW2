@@ -14,13 +14,21 @@ class ArgumentBuilderSkill(BaseSkill):
         self.llm_client = llm_client
 
     def execute(self, payload: dict[str, Any]) -> SkillResult:
-        """Build an argument through the LLM client."""
-        topic = str(payload.get("topic", ""))
-        stance = str(payload.get("stance", ""))
-        evidence = str(payload.get("evidence", ""))
-        argument = self.llm_client.complete(
-            f"Build argument for {stance}: {topic}\nEvidence: {evidence}"
-        )
+        """Build an argument through the LLM client.
+
+        When a fully-rendered ``prompt`` is supplied (the Pro debater routes its own
+        system prompt through this skill), it is completed directly; otherwise an
+        argument prompt is composed from topic/stance/evidence fields.
+        """
+        if "prompt" in payload:
+            argument = self.llm_client.complete(str(payload["prompt"]))
+        else:
+            topic = str(payload.get("topic", ""))
+            stance = str(payload.get("stance", ""))
+            evidence = str(payload.get("evidence", ""))
+            argument = self.llm_client.complete(
+                f"Build argument for {stance}: {topic}\nEvidence: {evidence}"
+            )
         return SkillResult.ok({"argument": argument})
 
 

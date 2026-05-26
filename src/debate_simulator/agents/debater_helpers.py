@@ -2,12 +2,33 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from debate_simulator.models.debate import Penalty
 from debate_simulator.shared.constants import (
     AgentRole,
     PenaltyPoints,
     PenaltyType,
 )
+from debate_simulator.skills.base_skill import SkillResult
+
+
+def run_distinctive_skill(agent: Any, prompt: str) -> tuple[str | None, dict[str, SkillResult]]:
+    """Route a debater's rendered prompt through its distinctive builder skill.
+
+    Each son owns a *different* skill (Pro → ``argument_builder``, Con →
+    ``rebuttal_builder``) so the two never collapse into the same behavior. The
+    skill makes the single LLM call for the turn. Returns the generated text plus
+    the skill results for observability; ``(None, {})`` when no distinctive skill
+    is wired, signalling the caller to fall back to a direct LLM call.
+    """
+    name = getattr(agent, "distinctive_skill", "")
+    if not name or name not in agent.skills:
+        return None, {}
+    result = agent.skills[name].execute({"prompt": prompt})
+    if not result.success or not result.data:
+        return None, {name: result}
+    return str(next(iter(result.data.values()))), {name: result}
 
 
 def count_words(text: str) -> int:
@@ -95,4 +116,4 @@ def build_debater_prompt(
     )
 
 
-__all__ = ["apply_limits", "build_debater_prompt", "count_words"]
+__all__ = ["apply_limits", "build_debater_prompt", "count_words", "run_distinctive_skill"]

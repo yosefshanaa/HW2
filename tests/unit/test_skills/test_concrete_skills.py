@@ -120,3 +120,17 @@ def test_rebuttal_builder_skill_uses_llm() -> None:
     )
 
     assert result.data == {"rebuttal": "llm:Rebut "}
+
+
+def test_argument_builder_completes_prompt_passthrough() -> None:
+    """A supplied prompt is completed directly, bypassing internal composition."""
+    result = ArgumentBuilderSkill(llm_client=FakeLlm()).execute({"prompt": "PROMPT"})
+
+    assert result.data == {"argument": "llm:PROMPT"}
+
+
+def test_rebuttal_builder_completes_prompt_passthrough() -> None:
+    """A supplied prompt is completed directly, bypassing internal composition."""
+    result = RebuttalBuilderSkill(llm_client=FakeLlm()).execute({"prompt": "PROMPT"})
+
+    assert result.data == {"rebuttal": "llm:PROMPT"}

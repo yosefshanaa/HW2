@@ -9,6 +9,8 @@ from debate_simulator.infrastructure.search.searcher import DuckDuckGoSearcher
 from debate_simulator.services import DebateEngine
 from debate_simulator.shared import ApiGatekeeper, LlmClient, load_settings
 from debate_simulator.shared.constants import ConfigFile
+from debate_simulator.skills.argument_builder import ArgumentBuilderSkill
+from debate_simulator.skills.rebuttal_builder import RebuttalBuilderSkill
 from debate_simulator.skills.web_search import WebSearchSkill
 
 
@@ -67,9 +69,17 @@ class DebateSimulatorSDK:
         search_skill = WebSearchSkill(
             DuckDuckGoSearcher(gatekeeper, settings.setup.search.max_results_per_query)
         )
+        # Each son owns a *different* skill so the two never collapse into identical
+        # behavior: Pro builds affirmative arguments, Con builds targeted rebuttals.
         return DebateEngine(
-            pro_agent=ProDebaterAgent("pro", llm, skills={"web_search": search_skill}),
-            con_agent=ConDebaterAgent("con", llm, skills={"web_search": search_skill}),
+            pro_agent=ProDebaterAgent(
+                "pro", llm,
+                skills={"web_search": search_skill, "argument_builder": ArgumentBuilderSkill(llm)},
+            ),
+            con_agent=ConDebaterAgent(
+                "con", llm,
+                skills={"web_search": search_skill, "rebuttal_builder": RebuttalBuilderSkill(llm)},
+            ),
             judge_agent=JudgeAgent("judge", llm, skills={"web_search": search_skill}),
             results_path=self.results_path,
             hooks=self.hooks,

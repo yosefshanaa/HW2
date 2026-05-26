@@ -6,6 +6,7 @@ from debate_simulator.agents.base_agent import BaseAgent
 from debate_simulator.agents.debater_helpers import (
     apply_limits,
     build_debater_prompt,
+    run_distinctive_skill,
 )
 from debate_simulator.agents.repetition import check_repetition, check_source_reuse, extract_sources
 from debate_simulator.models.agent import AgentResponse, TurnContext
@@ -21,6 +22,7 @@ class DebaterAgent(BaseAgent, ABC):
     """Abstract debater agent with fixed stance behavior."""
 
     stance: Stance
+    distinctive_skill: str = ""
 
     def __init__(
         self,
@@ -39,6 +41,8 @@ class DebaterAgent(BaseAgent, ABC):
         self.previous_arguments: list[str] = []
         self.used_sources: list[str] = []
         self.known_sources: list[str] = []
+        self._last_prompt = ""
+        self._skill_text: str | None = None
 
     def research(self, topic: str) -> list[str]:
         """Run optional project-local web-search research for the topic."""
@@ -60,21 +64,13 @@ class DebaterAgent(BaseAgent, ABC):
                 self.known_sources.append(title)
         return self.research_notes
 
-    def build_argument(self, topic: str) -> str:
-        """Build an argument for the configured stance."""
-        return self.llm_client.complete(f"Build {self.stance.value} argument: {topic}")
-
-    def build_rebuttal(self, opponent_argument: str) -> str:
-        """Build a rebuttal to the opponent's argument."""
-        return self.llm_client.complete(f"Rebut: {opponent_argument}")
-
     def _build_prompt(self, context: TurnContext) -> str:
         max_lines = int(context.metadata.get("max_lines", 2))
         total_rounds = int(context.metadata.get("total_rounds", 10))
         max_words = int(context.metadata.get("max_words", _WORD_COUNT_PENALTY_THRESHOLD))
         self.current_max_lines = max_lines
         self.current_max_words = max_words
-        return build_debater_prompt(
+        self._last_prompt = build_debater_prompt(
             template=_DEBATER_PROMPT,
             agent_name=self.name,
             topic=context.topic,
@@ -90,12 +86,15 @@ class DebaterAgent(BaseAgent, ABC):
             max_lines=max_lines,
             max_words=max_words,
         )
+        return self._last_prompt
 
     def _execute_skills(self, context: TurnContext) -> dict[str, SkillResult]:
-        return {}
+        """Generate this turn via the son's distinctive builder skill, if wired."""
+        self._skill_text, results = run_distinctive_skill(self, self._last_prompt)
+        return results
 
     def _call_llm(self, prompt: str) -> str:
-        return self.llm_client.complete(prompt)
+        return self._skill_text if self._skill_text else self.llm_client.complete(prompt)
 
     def _validate_response(self, response: str) -> AgentResponse:
         text = self._sanitize_response(response)
@@ -131,6 +130,8 @@ class DebaterAgent(BaseAgent, ABC):
 class ProDebaterAgent(DebaterAgent):
     """Concrete debater assigned to the pro stance."""
 
+    distinctive_skill = "argument_builder"
+
     def __init__(self, name: str, llm_client: Any, skills: dict[str, Any] | None = None) -> None:
         """Create a pro debater."""
         super().__init__(name, AgentRole.PRO, Stance.PRO, llm_client, skills)
@@ -138,6 +139,8 @@ class ProDebaterAgent(DebaterAgent):
 
 class ConDebaterAgent(DebaterAgent):
     """Concrete debater assigned to the con stance."""
+
+    distinctive_skill = "rebuttal_builder"
 
     def __init__(self, name: str, llm_client: Any, skills: dict[str, Any] | None = None) -> None:
         """Create a con debater."""
