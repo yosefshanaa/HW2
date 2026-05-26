@@ -17,6 +17,8 @@ class LlmConfig(BaseModel):
     max_tokens: int
     api_key_env: str
     base_url_env: str | None = None
+    prompt_price_per_million: float = 0.0
+    completion_price_per_million: float = 0.0
 
 
 class DebateConfig(BaseModel):

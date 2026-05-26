@@ -65,6 +65,8 @@ class DebateSimulatorSDK:
             model=settings.setup.llm.model,
             temperature=settings.setup.llm.temperature,
             max_tokens=settings.setup.llm.max_tokens,
+            prompt_price_per_million=settings.setup.llm.prompt_price_per_million,
+            completion_price_per_million=settings.setup.llm.completion_price_per_million,
         )
         search_skill = WebSearchSkill(
             DuckDuckGoSearcher(gatekeeper, settings.setup.search.max_results_per_query)
@@ -83,6 +85,7 @@ class DebateSimulatorSDK:
             judge_agent=JudgeAgent("judge", llm, skills={"web_search": search_skill}),
             results_path=self.results_path,
             hooks=self.hooks,
+            llm_client=llm,
         )
 
     def _build_logger(self, settings: Any) -> FifoLogger:

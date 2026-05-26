@@ -132,14 +132,18 @@ def apply_final_penalties(rounds: list[Any], scores: dict[str, Any]) -> dict[str
 
 
 def build_result(
-    topic: str, rounds: list[Any], scores: dict[str, Any], winner: str, config: dict[str, Any]
+    topic: str, rounds: list[Any], scores: dict[str, Any], winner: str,
+    config: dict[str, Any], token_usage: dict[str, float] | None = None,
 ) -> DebateResult:
     """Construct a DebateResult from already-penalized scores.
 
     Penalties are applied once in DebateEngine.run_final_scoring (before the winner
     is declared), so this constructor must not re-apply them.
     """
-    return DebateResult(topic=topic, rounds=rounds, final_scores=scores, winner=winner, config=config)
+    return DebateResult(
+        topic=topic, rounds=rounds, final_scores=scores, winner=winner,
+        config=config, token_usage=token_usage or {},
+    )
 
 
 __all__ = ["apply_final_penalties", "build_result", "enable_graceful_shutdown", "export_result", "father_relay", "is_shutdown_requested", "load_debate_defaults", "safe_turn"]

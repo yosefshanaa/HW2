@@ -26,6 +26,7 @@ class DebateEngine:
         results_path: str = "results",
         hooks: HookRegistry | None = None,
         process_manager: Any | None = None,
+        llm_client: Any | None = None,
     ) -> None:
         """Create a debate engine with optional injected agents."""
         self.pro_agent = pro_agent
@@ -34,6 +35,7 @@ class DebateEngine:
         self.results_path = results_path
         self.hooks = hooks or HookRegistry()
         self.process_manager = process_manager
+        self.llm_client = llm_client
         self.rounds: list[Round] = []
 
     def initialize_agents(self) -> None:
@@ -138,7 +140,8 @@ class DebateEngine:
         self.run_research_phase(topic)
         rounds = self.run_debate_pings(topic, pings, max_lines=max_lines, max_words=max_words)
         scores, winner = self.run_final_scoring()
-        result = build_result(topic, rounds, scores, winner, debate_config)
+        usage = self.llm_client.usage_summary() if self.llm_client else {}
+        result = build_result(topic, rounds, scores, winner, debate_config, usage)
         export_result(result, self.results_path)
         self.hooks.emit("on_debate_end", results=result)
         return result

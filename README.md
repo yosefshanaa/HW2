@@ -468,12 +468,16 @@ systematic lean.
   },
   "winner": "pro",
   "token_usage": {
-    "total_prompt_tokens": 0,
-    "total_completion_tokens": 0,
-    "total_cost_usd": 0.0
+    "total_prompt_tokens": 25657,
+    "total_completion_tokens": 2312,
+    "total_cost_usd": 0.005236
   }
 }
 ```
+
+`token_usage` is populated live from each OpenAI response (`response.usage`) and costed from
+the per-million prices in `config/setup.json`. See [docs/COST_TRACKING.md](docs/COST_TRACKING.md)
+for the methodology, a measured 10-ping run (~$0.005), and cost-scaling analysis.
 
 ---
 
@@ -631,18 +635,18 @@ Last verified on 2026-05-26:
 | Check | Result |
 |-------|--------|
 | `uv run ruff check src tests main.py main_display.py` | 0 errors |
-| `uv run pytest` | 153 passed, 1 skipped |
-| `uv run pytest --cov --cov-report=term-missing` | 91.54% total coverage |
+| `uv run pytest` | 154 passed, 1 skipped |
+| `uv run pytest --cov --cov-report=term-missing` | 92.02% total coverage |
 | `timeout 180s uv run python main.py --topic 1 --pings 1` | Completed; Con won 81.8% vs Pro 73.4% |
 | Running background jobs | None after verification |
 
-**`uv run pytest` — 153 passed, 1 skipped:**
+**`uv run pytest` — 154 passed, 1 skipped:**
 
-![pytest output showing 153 passed, 1 skipped](assets/screenshot_tests_passing.png)
+![pytest output showing 154 passed, 1 skipped](assets/screenshot_tests_passing.png)
 
-**`uv run pytest --cov --cov-report=term-missing` — 91.54% total coverage:**
+**`uv run pytest --cov --cov-report=term-missing` — 92.02% total coverage:**
 
-![Coverage report showing 91.54% total coverage above the 85% threshold](assets/screenshot_coverage.png)
+![Coverage report showing 92.02% total coverage above the 85% threshold](assets/screenshot_coverage.png)
 
 ---
 
