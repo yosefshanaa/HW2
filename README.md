@@ -12,11 +12,13 @@ A terminal-based Python SDK application that simulates a court-style debate betw
 - [Architecture](#architecture)
 - [Configuration](#configuration)
 - [Project Structure](#project-structure)
+- [Documentation](#documentation)
 - [Debate Topics](#debate-topics)
 - [Scoring System](#scoring-system)
 - [Results & Output](#results--output)
 - [Skills System](#skills-system)
 - [Development](#development)
+- [Engineering Process & Problem-Solving](#engineering-process--problem-solving)
 - [Testing](#testing)
 - [License & Credits](#license--credits)
 
@@ -328,6 +330,36 @@ debate-simulator/
 
 ---
 
+## Documentation
+
+Full engineering documentation lives in [`docs/`](docs/). The core planning trio:
+
+| Document | Purpose |
+|----------|---------|
+| [docs/PRD.md](docs/PRD.md) | Product Requirements — overview, stakeholders, functional/non-functional requirements, acceptance criteria & KPIs |
+| [docs/PLAN.md](docs/PLAN.md) | Architecture & Planning — C4 diagrams, UML, 12 ADRs, module design, timeline, risk analysis |
+| [docs/TODO.md](docs/TODO.md) | Task tracking — 17 phases with status, plus a checklist mapped to the grading guidelines |
+
+Per-mechanism PRDs (one per central mechanism):
+
+| Document | Mechanism |
+|----------|-----------|
+| [PRD_skills.md](docs/PRD_skills.md) | Router-Skill pattern, distinct skill per son |
+| [PRD_context_engineering.md](docs/PRD_context_engineering.md) | Write/Select context-window management |
+| [PRD_session_management.md](docs/PRD_session_management.md) | Session lifecycle & context scoping |
+| [PRD_judge_evaluation.md](docs/PRD_judge_evaluation.md) | Scoring criteria, penalties, bias mitigation |
+| [PRD_api_gatekeeper.md](docs/PRD_api_gatekeeper.md) | Rate limiting, queuing, retry |
+| [PRD_process_management.md](docs/PRD_process_management.md) | Timeouts, watchdog, subprocess control |
+| [PRD_logging_pipeline.md](docs/PRD_logging_pipeline.md) | FIFO logging, 20 files × 500 lines |
+| [PRD_search_engine.md](docs/PRD_search_engine.md) | DuckDuckGo internet search |
+| [PRD_rag_system.md](docs/PRD_rag_system.md) | Vector store, embeddings, retrieval |
+
+Plus [PROMPT_ENGINEERING_LOG.md](docs/PROMPT_ENGINEERING_LOG.md) (prompt iterations & development snapshots),
+[COST_TRACKING.md](docs/COST_TRACKING.md) (token/cost analysis), and a full session transcript in
+[SAMPLE_DEBATE.md](docs/SAMPLE_DEBATE.md).
+
+---
+
 ## Debate Topics
 
 | # | Category | Topic |
@@ -537,6 +569,27 @@ Every feature follows **RED → GREEN → REFACTOR**:
 The full prompt-engineering history (the prompts used to build and tune the agents) lives in
 [docs/PROMPT_ENGINEERING_LOG.md](docs/PROMPT_ENGINEERING_LOG.md); the live agent prompts are in
 `src/debate_simulator/agents/prompts/`.
+
+---
+
+## Engineering Process & Problem-Solving
+
+This project was not a single pass — the prompts, penalties, and scoring logic were tuned
+across many manual end-to-end runs. Each run that misbehaved drove a concrete fix and a commit.
+A couple of captures from that debugging loop:
+
+**Iterating on word-cap, repetition, judge parsing, and fallback rules — fixes committed and
+verified against a live debate in the same view:**
+
+![Terminal showing a fix changelog committed and pushed next to a live debate run](assets/dev_snapshot_fixes_changelog.png)
+
+**Diagnosing repeated arguments found in manual testing — adding a repetition penalty, source
+de-duplication, and a rewritten debater prompt, then pushing the 21-file fix:**
+
+![Terminal showing the repetition fix, the commit pushed, and the resulting debate](assets/dev_snapshot_repetition_fix.png)
+
+The corresponding prompt/scoring iterations are recorded in
+[docs/PROMPT_ENGINEERING_LOG.md](docs/PROMPT_ENGINEERING_LOG.md).
 
 ---
 

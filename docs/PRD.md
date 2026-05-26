@@ -479,6 +479,7 @@ Each major mechanism has its own dedicated PRD document:
 | `docs/PRD_api_gatekeeper.md` | API Gatekeeper (rate limiting, queuing, retry) |
 | `docs/PRD_logging_pipeline.md` | FIFO logging (20 files, 500 lines, rotation) |
 | `docs/PRD_process_management.md` | Process management (timeouts, watchdog, SIGKILL) |
+| `docs/PRD_skills.md` | Skills system (Router-Skill pattern, distinct skill per son) |
 | `docs/PRD_context_engineering.md` | Context Engineering (Write/Select strategy, context window management) |
 | `docs/PRD_session_management.md` | Session lifecycle, context scoping, message history |
 

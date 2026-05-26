@@ -136,7 +136,9 @@ debate-simulator/
 │   ├── PRD_api_gatekeeper.md           # API Gatekeeper PRD
 │   ├── PRD_logging_pipeline.md         # Logging pipeline PRD
 │   ├── PRD_process_management.md       # Process management PRD
-│   └── PRD_skills.md                   # Skills / Router-Skill PRD
+│   ├── PRD_skills.md                   # Skills / Router-Skill PRD
+│   ├── PRD_context_engineering.md      # Context Engineering (Write/Select) PRD
+│   └── PRD_session_management.md       # Session lifecycle PRD
 ├── config/
 │   ├── setup.json                     # Main app config (versioned)
 │   └── rate_limits.json               # API rate limits (versioned)
