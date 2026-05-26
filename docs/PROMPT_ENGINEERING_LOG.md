@@ -37,3 +37,18 @@
 ## Performance Notes
 - Unit and integration tests use deterministic test doubles.
 - Real prompt quality should be evaluated during E2E runs with `OPENAI_API_KEY`.
+
+## Development Snapshots
+The prompts and scoring rules were not written once — they were tuned across many manual
+end-to-end runs, each surfacing a concrete failure that drove a fix and a commit. These
+captures show that loop in progress.
+
+**Iterating on word-cap, repetition, judge parsing, and fallback rules — fixes committed and
+verified against a live debate:**
+
+![Terminal showing a fix changelog committed and pushed alongside a live debate run](../assets/dev_snapshot_fixes_changelog.png)
+
+**Fixing repeated-argument behavior found in manual testing — repetition penalty, source
+de-duplication, and a rewritten debater prompt, then pushed:**
+
+![Terminal showing the repetition fix, a 21-file commit pushed, and the resulting debate](../assets/dev_snapshot_repetition_fix.png)
